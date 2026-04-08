@@ -72,7 +72,8 @@ class UserPreferences @Inject constructor(@ApplicationContext context: Context) 
             heightCm = preferences[USER_HEIGHT_CM] ?: 0f,
             somatotype = preferences[USER_SOMATOTYPE] ?: "",
             goal = preferences[USER_GOAL] ?: "",
-            gymLevel = preferences[USER_GYM_LEVEL] ?: ""
+            gymLevel = preferences[USER_GYM_LEVEL] ?: "",
+            gender = preferences[USER_GENDER] ?: "",
         )
     }
 }

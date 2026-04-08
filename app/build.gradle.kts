@@ -1,5 +1,7 @@
 @file:Suppress("DEPRECATION")
 
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,6 +9,12 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
     id("com.google.dagger.hilt.android")
+}
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
 }
 
 android {
@@ -21,6 +29,9 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "EXERCISE_DB_KEY", "\"${localProperties.getProperty("EXERCISE_DB_KEY") ?: ""}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${localProperties.getProperty("GEMINI_API_KEY") ?: ""}\"")
     }
 
     buildTypes {
@@ -42,10 +53,12 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
 dependencies {
+    // ... (Tus dependencias se mantienen iguales)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -84,7 +97,6 @@ dependencies {
     implementation(libs.androidx.compose.material3.v150alpha08)
     implementation  (libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.work.runtime.ktx)
-    implementation(libs.squareup.moshi.kotlin)
     implementation(libs.androidx.datastore.preferences)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -95,9 +107,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.genai.prompt)
     implementation(libs.play.services.tasks)
-    implementation(libs.retrofit)
-    implementation(libs.converter.moshi)
-    implementation(libs.logging.interceptor.v4110)
     implementation(libs.moshi)
     implementation(libs.coil.compose)
     implementation("io.coil-kt:coil-compose:2.6.0")

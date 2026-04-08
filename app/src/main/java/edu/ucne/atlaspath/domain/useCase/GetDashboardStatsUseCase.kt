@@ -1,33 +1,18 @@
 package edu.ucne.atlaspath.domain.useCase
 
 import edu.ucne.atlaspath.data.remote.Resource
-import edu.ucne.atlaspath.domain.model.sesion
+import edu.ucne.atlaspath.domain.model.Dashboard
+import edu.ucne.atlaspath.domain.model.RangoMuscular
+import edu.ucne.atlaspath.domain.model.Sesion
 import edu.ucne.atlaspath.domain.repository.RoutineRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-data class DashboardStats(
-    val totalEntrenamientos: Int = 0,
-    val volumenTotalLbs: Double = 0.0,
-    val rachaDias: Int = 0,
-    val nivelActual: Int = 1,
-    val progresoNivel: Float = 0f,
-    val rangosMusculares: List<RangoMuscular> = emptyList()
-)
-
-data class RangoMuscular(
-    val musculo: String,
-    val rangoNombre: String,
-    val progreso: Float,
-    val medalla: String,
-    val pesoMaximoLbs: Double
-)
-
 class GetDashboardStatsUseCase @Inject constructor(
     private val repository: RoutineRepository
 ) {
-    operator fun invoke(): Flow<Resource<DashboardStats>> {
+    operator fun invoke(): Flow<Resource<Dashboard>> {
         return repository.getAllSessions().map { resource ->
             when (resource) {
                 is Resource.Success -> {
@@ -40,10 +25,9 @@ class GetDashboardStatsUseCase @Inject constructor(
         }
     }
 
-    private fun calcularEstadisticas(sesiones: List<sesion>): DashboardStats {
+    private fun calcularEstadisticas(sesiones: List<Sesion>): Dashboard{
         var volumenTotal = 0.0
         var xpPorAsistencia = 0
-
 
         val maxFuerzaPorMusculo = mutableMapOf<String, Double>()
 
@@ -70,7 +54,7 @@ class GetDashboardStatsUseCase @Inject constructor(
             calcularRangoPorFuerza(musculo, fuerzaMax)
         }.sortedByDescending { it.pesoMaximoLbs }
 
-        return DashboardStats(
+        return Dashboard(
             totalEntrenamientos = sesiones.size,
             volumenTotalLbs = volumenTotal,
             rachaDias = sesiones.size,
@@ -108,7 +92,7 @@ class GetDashboardStatsUseCase @Inject constructor(
                 musculo, "Oro", ((fuerzaMaxLbs - limiteOro) / (limitePlatino - limiteOro)).toFloat(), "🥇", fuerzaMaxLbs
             )
             else -> RangoMuscular(
-                musculo, "Platino", 1f, "💎", fuerzaMaxLbs // Máximo rango alcanzado
+                musculo, "Platino", 1f, "💎", fuerzaMaxLbs
             )
         }
     }

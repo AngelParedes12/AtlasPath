@@ -18,7 +18,7 @@ class GeminiRemoteDataSource @Inject constructor(
                 DEBES responder ÚNICAMENTE con un objeto JSON válido con esta estructura exacta:
                 {
                   "titulo": "String",
-                  "descripción": "String",
+                  "descripcion": "String",
                   "ejercicios": [
                     { 
                       "nombre": "String", 

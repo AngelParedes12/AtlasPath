@@ -9,13 +9,15 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import edu.ucne.atlaspath.BuildConfig
+import edu.ucne.atlaspath.data.local.dao.RoutineDao
 import edu.ucne.atlaspath.data.local.dao.SessionDao
-import edu.ucne.atlaspath.data.local.dao.routineDao
-import edu.ucne.atlaspath.data.local.dataBase.appDataBase
-import edu.ucne.atlaspath.data.remote.GeminiApi
+import edu.ucne.atlaspath.data.local.dataBase.AppDataBase
 import edu.ucne.atlaspath.data.remote.ExerciseDbApi
+import edu.ucne.atlaspath.data.remote.GeminiApi
 import edu.ucne.atlaspath.data.repository.RoutineRepositoryImpl
 import edu.ucne.atlaspath.domain.repository.RoutineRepository
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 import javax.inject.Singleton
@@ -26,25 +28,25 @@ object AppModule {
 
     @Singleton
     @Provides
-    fun provideDatabase(@ApplicationContext context: Context): appDataBase {
+    fun provideDatabase(@ApplicationContext context: Context): AppDataBase {
         return Room.databaseBuilder(
             context,
-            appDataBase::class.java,
+            AppDataBase::class.java,
             "atlaspath.db"
         ).fallbackToDestructiveMigration()
             .build()
     }
 
     @Provides
-    fun provideRoutineDao(db: appDataBase): routineDao = db.routineDao()
+    fun provideRoutineDao(db: AppDataBase): RoutineDao = db.routineDao()
 
     @Provides
-    fun provideSessionDao(db: appDataBase): SessionDao = db.sessionDao()
+    fun provideSessionDao(db: AppDataBase): SessionDao = db.sessionDao()
 
     @Provides
     @Singleton
     fun provideRoutineRepository(
-        routineDao: routineDao,
+        routineDao: RoutineDao,
         sessionDao: SessionDao
     ): RoutineRepository {
         return RoutineRepositoryImpl(routineDao, sessionDao)
@@ -60,6 +62,19 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("X-RapidAPI-Key", BuildConfig.EXERCISE_DB_KEY)
+                    .addHeader("X-RapidAPI-Host", "exercisedb.p.rapidapi.com")
+                    .build()
+                chain.proceed(request)
+            }.build()
+    }
+
+    @Provides
+    @Singleton
     fun provideGeminiApi(moshi: Moshi): GeminiApi {
         return Retrofit.Builder()
             .baseUrl("https://generativelanguage.googleapis.com/")
@@ -70,9 +85,10 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideExerciseDbApi(moshi: Moshi): ExerciseDbApi {
+    fun provideExerciseDbApi(moshi: Moshi, client: OkHttpClient): ExerciseDbApi {
         return Retrofit.Builder()
             .baseUrl("https://exercisedb.p.rapidapi.com/")
+            .client(client) // Usamos el cliente con la llave oculta
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
             .create(ExerciseDbApi::class.java)

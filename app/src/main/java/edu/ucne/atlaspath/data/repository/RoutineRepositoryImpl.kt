@@ -1,19 +1,19 @@
 package edu.ucne.atlaspath.data.repository
 
 import edu.ucne.atlaspath.data.local.dao.SessionDao
-import edu.ucne.atlaspath.data.local.dao.routineDao
+import edu.ucne.atlaspath.data.local.dao.RoutineDao
 import edu.ucne.atlaspath.data.local.mapper.toDomain
 import edu.ucne.atlaspath.data.local.mapper.toEntity
 import edu.ucne.atlaspath.data.remote.Resource
 import edu.ucne.atlaspath.domain.model.Rutina
-import edu.ucne.atlaspath.domain.model.sesion
+import edu.ucne.atlaspath.domain.model.Sesion
 import edu.ucne.atlaspath.domain.repository.RoutineRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
 
 class RoutineRepositoryImpl @Inject constructor(
-    private val routineDao: routineDao,
+    private val routineDao: RoutineDao,
     private val sessionDao: SessionDao
 ) : RoutineRepository {
 
@@ -59,16 +59,17 @@ class RoutineRepositoryImpl @Inject constructor(
             Resource.Error(e.message ?: "Error al eliminar la rutina")
         }
     }
-    override suspend fun saveSesion(sesion: sesion): Resource<Unit> {
+
+    override suspend fun saveSesion(sesion: Sesion): Resource<Unit> {
         return try {
             sessionDao.save(sesion.toEntity())
             Resource.Success(Unit)
         } catch (e: Exception) {
             Resource.Error(e.message ?: "Error al guardar la sesión")
         }
-
     }
-    override fun getAllSessions(): Flow<Resource<List<sesion>>> = flow {
+
+    override fun getAllSessions(): Flow<Resource<List<Sesion>>> = flow {
         emit(Resource.Loading())
         try {
             sessionDao.getAllSessions().collect { entities ->

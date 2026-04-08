@@ -7,14 +7,7 @@ data class RoutineDto(
     val titulo: String? = "",
     val descripcion: String? = "",
     val ejercicios: List<EjercicioDto> = emptyList()
-) {
-    fun toDomain() = Rutina(
-        rutinaId = 0,
-        titulo = titulo ?: "Rutina generada por IA",
-        descripcion = descripcion ?: "",
-        ejercicios = ejercicios.map { it.toDomain() }
-    )
-}
+)
 
 data class EjercicioDto(
     val nombre: String? = "",
@@ -22,12 +15,19 @@ data class EjercicioDto(
     val repeticiones: Int? = 0,
     val descansoSegundos: Int? = 0,
     val grupoMuscular: String? = "General"
-) {
-    fun toDomain() = Ejercicio(
-        nombre = nombre ?: "",
-        series = series ?: 0,
-        repeticiones = repeticiones ?: 0,
-        descansoSegundos = descansoSegundos ?: 0,
-        grupoMuscular = grupoMuscular ?: "General"
-    )
-}
+)
+
+fun RoutineDto.toDomain() = Rutina(
+    rutinaId = 0,
+    titulo = titulo ?: "Rutina generada por IA",
+    descripcion = descripcion ?: "",
+    ejercicios = ejercicios.map { it.toDomain() }
+)
+
+fun EjercicioDto.toDomain() = Ejercicio(
+    nombre = nombre ?: "",
+    series = series ?: 0,
+    repeticiones = repeticiones ?: 0,
+    descansoSegundos = descansoSegundos ?: 0,
+    grupoMuscular = grupoMuscular ?: "General"
+)

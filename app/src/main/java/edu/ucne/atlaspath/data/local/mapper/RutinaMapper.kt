@@ -7,7 +7,7 @@ import edu.ucne.atlaspath.data.local.entity.SessionEntity
 import edu.ucne.atlaspath.domain.model.Ejercicio
 import edu.ucne.atlaspath.domain.model.Rutina
 import edu.ucne.atlaspath.domain.model.RegistroEjercicio
-import edu.ucne.atlaspath.domain.model.sesion
+import edu.ucne.atlaspath.domain.model.Sesion
 
 fun RoutineEntity.toDomain() = Rutina(
     rutinaId = rutinaId ?: 0,
@@ -39,7 +39,7 @@ fun Ejercicio.toEntity() = EjercicioEntity(
     grupoMuscular = grupoMuscular
 )
 
-fun SessionEntity.toDomain() = sesion(
+fun SessionEntity.toDomain() = Sesion(
     sesionId = sesionId ?: 0,
     rutinaId = rutinaId,
     fechaInicio = fechaInicio,
@@ -49,7 +49,7 @@ fun SessionEntity.toDomain() = sesion(
     registros = registros.map { it.toDomain() }
 )
 
-fun sesion.toEntity() = SessionEntity(
+fun Sesion.toEntity() = SessionEntity(
     sesionId = if (sesionId == 0) null else sesionId,
     rutinaId = rutinaId,
     fechaInicio = fechaInicio,

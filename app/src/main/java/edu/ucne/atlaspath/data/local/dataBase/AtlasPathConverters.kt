@@ -8,10 +8,8 @@ import edu.ucne.atlaspath.data.local.entity.EjercicioEntity
 import edu.ucne.atlaspath.data.local.entity.RegistroEntity
 
 class AtlasPathConverters {
-    // Inicializamos Moshi
     private val moshi = Moshi.Builder().add(KotlinJsonAdapterFactory()).build()
 
-    // --- CONVERTERS PARA EJERCICIOS (Rutinas) ---
     private val ejercicioListType = Types.newParameterizedType(List::class.java, EjercicioEntity::class.java)
     private val ejercicioAdapter = moshi.adapter<List<EjercicioEntity>>(ejercicioListType)
 
@@ -29,7 +27,6 @@ class AtlasPathConverters {
         }
     }
 
-    // --- CONVERTERS PARA REGISTROS (Sesiones RPG) ---
     private val registroListType = Types.newParameterizedType(List::class.java, RegistroEntity::class.java)
     private val registroAdapter = moshi.adapter<List<RegistroEntity>>(registroListType)
 
