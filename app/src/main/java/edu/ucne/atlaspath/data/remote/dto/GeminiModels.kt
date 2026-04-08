@@ -1,6 +1,5 @@
 package edu.ucne.atlaspath.data.remote.dto
 
-// Estructura mínima para enviar el prompt a Gemini
 data class GeminiRequest(
     val contents: List<Content>
 )
@@ -11,4 +10,11 @@ data class Content(
 
 data class Part(
     val text: String
+)
+data class GeminiResponse(
+    val candidates: List<Candidate>?
+)
+
+data class Candidate(
+    val content: Content?
 )
