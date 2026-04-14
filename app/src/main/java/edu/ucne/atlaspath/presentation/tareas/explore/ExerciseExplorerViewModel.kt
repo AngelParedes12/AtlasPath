@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ExerciseExplorerViewModel @Inject constructor(
-    private val repository: RoutineRepository // <-- Cambiado de API a Repository
+    private val repository: RoutineRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ExplorerUiState())

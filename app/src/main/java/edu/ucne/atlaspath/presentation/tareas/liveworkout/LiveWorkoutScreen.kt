@@ -317,7 +317,7 @@ fun LiveWorkoutPreview() {
                 state = LiveWorkoutUiState(
                     isLoading = false,
                     cronometroTotal = 125,
-                    rutinaTitulo = "Día de Empuje",
+                    rutinaTitulo = "Día de Pecho",
                     activeExercises = mockExercises
                 ),
                 onEvent = {},

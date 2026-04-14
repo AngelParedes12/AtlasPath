@@ -338,8 +338,8 @@ fun ExerciseExplorerPopulatedPreview() {
                     target = "chest",
                     equipment = "barbell",
                     gifUrl = "",
-                    bodyPart = "chest", // <- Añadido
-                    instructions = emptyList() // <- Añadido
+                    bodyPart = "chest",
+                    instructions = emptyList()
                 ),
                 ExerciseDto(
                     id = "2",
