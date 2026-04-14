@@ -1,6 +1,7 @@
 package edu.ucne.atlaspath.domain.repository
 
 import edu.ucne.atlaspath.data.remote.Resource
+import edu.ucne.atlaspath.data.local.entity.ExerciseEntity // <-- Importado
 import edu.ucne.atlaspath.domain.model.Rutina
 import edu.ucne.atlaspath.domain.model.Sesion
 import kotlinx.coroutines.flow.Flow
@@ -13,4 +14,8 @@ interface RoutineRepository {
 
         suspend fun saveSesion(sesion: Sesion): Resource<Unit>
         fun getAllSessions(): Flow<Resource<List<Sesion>>>
+
+        fun getAllExercisesLocal(): Flow<List<ExerciseEntity>>
+        fun searchExercisesLocal(query: String): Flow<List<ExerciseEntity>>
+        fun getExercisesByMuscleLocal(muscle: String): Flow<List<ExerciseEntity>>
 }

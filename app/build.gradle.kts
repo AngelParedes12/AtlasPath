@@ -58,7 +58,6 @@ android {
 }
 
 dependencies {
-    // ... (Tus dependencias se mantienen iguales)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

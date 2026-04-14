@@ -1,7 +1,10 @@
+@file:Suppress("OPT_IN_USAGE", "OPT_IN_USAGE_ERROR")
+
 package edu.ucne.atlaspath.presentation.tareas.rutina.list
 
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,9 +21,11 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +39,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.atlaspath.domain.model.Ejercicio
 import edu.ucne.atlaspath.domain.model.Rutina
+import edu.ucne.atlaspath.presentation.tareas.navigation.LocalSnackbarHost
+import kotlinx.coroutines.launch
 
 @Composable
 fun ListRutinaScreen(
@@ -65,6 +72,9 @@ fun ListRutinaBodyScreen(
     val context = LocalContext.current
     var rutinaToDelete by remember { mutableStateOf<Rutina?>(null) }
 
+    val snackbarHost = LocalSnackbarHost.current
+    val scope = rememberCoroutineScope()
+
     if (rutinaToDelete != null) {
         AlertDialog(
             onDismissRequest = { rutinaToDelete = null },
@@ -73,11 +83,14 @@ fun ListRutinaBodyScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        rutinaToDelete?.rutinaId?.let { id -> onEvent(ListRutinaEvent.DeleteRutina(id)) }
+                        rutinaToDelete?.rutinaId?.let { id ->
+                            onEvent(ListRutinaEvent.DeleteRutina(id))
+                            scope.launch { snackbarHost.showSnackbar("🗑️ Rutina eliminada de tu biblioteca") }
+                        }
                         rutinaToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                ) { Text("Eliminar") }
+                ) { Text("Eliminar", fontWeight = FontWeight.Bold) }
             },
             dismissButton = {
                 TextButton(onClick = { rutinaToDelete = null }) { Text("Cancelar") }
@@ -92,15 +105,17 @@ fun ListRutinaBodyScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreateRutina,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-                shape = RoundedCornerShape(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Nueva Rutina", fontWeight = FontWeight.Bold)
+            if (state.rutinas.isNotEmpty()) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateRutina,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Añadir")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Nueva Rutina", fontWeight = FontWeight.Bold)
+                }
             }
         }
     ) { padding ->
@@ -112,32 +127,48 @@ fun ListRutinaBodyScreen(
             if (state.isLoading) {
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (state.rutinas.isEmpty()) {
-                // --- ESTADO VACÍO ---
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(32.dp),
+                        .padding(horizontal = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(100.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant),
-                        contentAlignment = Alignment.Center
+                    OutlinedCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(50.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Column(
+                            modifier = Modifier
+                                .padding(32.dp)
+                                .fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(Icons.AutoMirrored.Filled.List, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text("Tu biblioteca está vacía", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text(
+                                "Forja tu primera rutina de combate o deja que la IA la diseñe por ti.",
+                                textAlign = TextAlign.Center,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(modifier = Modifier.height(32.dp))
+                            Button(
+                                onClick = onCreateRutina,
+                                modifier = Modifier.fillMaxWidth().height(50.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Forjar mi primera rutina", fontWeight = FontWeight.Bold)
+                            }
+                        }
                     }
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Text("Tu biblioteca está vacía", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        "Crea tu primera rutina de combate manual o deja que la IA la diseñe por ti.",
-                        textAlign = TextAlign.Center,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
                 }
             } else {
                 LazyColumn(
@@ -148,18 +179,18 @@ fun ListRutinaBodyScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     item {
-                        Text("Tus Planes de Entrenamiento", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+                        Text("Tus Planes de Entrenamiento", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
                     items(state.rutinas) { rutina ->
                         val musculosTrabajados = rutina.ejercicios.map { it.grupoMuscular }.distinct().take(3).joinToString(", ")
 
-                        Card(
+                        ElevatedCard(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(20.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            elevation = CardDefaults.elevatedCardElevation(defaultElevation = 3.dp)
                         ) {
                             Column(modifier = Modifier.padding(20.dp)) {
                                 Row(
@@ -171,25 +202,24 @@ fun ListRutinaBodyScreen(
                                         Text(rutina.titulo, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
                                         if (rutina.descripcion.isNotBlank()) {
                                             Spacer(modifier = Modifier.height(4.dp))
-                                            Text(rutina.descripcion, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                            Text(rutina.descripcion, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
 
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Surface(
                                             color = MaterialTheme.colorScheme.primaryContainer,
-                                            shape = RoundedCornerShape(8.dp)
+                                            shape = CircleShape
                                         ) {
-                                            Text("${rutina.ejercicios.size} Ejercicios", modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                                            Text("${rutina.ejercicios.size} Ejercicios", modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onPrimaryContainer)
                                         }
-                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Spacer(modifier = Modifier.width(8.dp))
                                         IconButton(
                                             onClick = { shareRutinaFromListAsText(context, rutina.titulo, rutina.ejercicios) },
                                             modifier = Modifier.size(32.dp)
                                         ) {
                                             Icon(Icons.Default.Share, contentDescription = "Compartir", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
                                         }
-                                        // BOTÓN DE BORRAR
                                         IconButton(
                                             onClick = { rutinaToDelete = rutina },
                                             modifier = Modifier.size(32.dp)
@@ -203,10 +233,11 @@ fun ListRutinaBodyScreen(
 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Icon(Icons.Filled.FitnessCenter, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = if (musculosTrabajados.isNotBlank()) "Enfocado en: $musculosTrabajados" else "Cuerpo Completo",
                                         style = MaterialTheme.typography.labelMedium,
+                                        fontWeight = FontWeight.SemiBold,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
@@ -219,17 +250,18 @@ fun ListRutinaBodyScreen(
                                 ) {
                                     OutlinedButton(
                                         onClick = { onRutinaClick(rutina.rutinaId) },
-                                        modifier = Modifier.weight(1f),
-                                        shape = RoundedCornerShape(12.dp)
+                                        modifier = Modifier.weight(1f).height(48.dp),
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
                                     ) {
-                                        Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp))
+                                        Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary)
                                         Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Editar")
+                                        Text("Editar", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                                     }
 
                                     Button(
                                         onClick = { onTrainClick(rutina.rutinaId) },
-                                        modifier = Modifier.weight(1f),
+                                        modifier = Modifier.weight(1f).height(48.dp),
                                         shape = RoundedCornerShape(12.dp),
                                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                                     ) {
@@ -260,13 +292,16 @@ fun shareRutinaFromListAsText(context: Context, titulo: String, ejercicios: List
 fun ListRutinaEmptyPreview() {
     MaterialTheme {
         Surface {
-            ListRutinaBodyScreen(
-                state = ListRutinaUiState(isLoading = false, rutinas = emptyList()),
-                onEvent = {},
-                onRutinaClick = {},
-                onCreateRutina = {},
-                onTrainClick = {}
-            )
+            val snackbarHostState = remember { SnackbarHostState() }
+            CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
+                ListRutinaBodyScreen(
+                    state = ListRutinaUiState(isLoading = false, rutinas = emptyList()),
+                    onEvent = {},
+                    onRutinaClick = {},
+                    onCreateRutina = {},
+                    onTrainClick = {}
+                )
+            }
         }
     }
 }
@@ -276,33 +311,36 @@ fun ListRutinaEmptyPreview() {
 fun ListRutinaPopulatedPreview() {
     MaterialTheme {
         Surface {
-            val mockRutinas = listOf(
-                Rutina(
-                    rutinaId = 1,
-                    titulo = "Fuerza Espartana",
-                    descripcion = "Día pesado para romper marcas.",
-                    ejercicios = listOf(
-                        Ejercicio(nombre = "Press de Banca", series = 4, repeticiones = 8, descansoSegundos = 90, grupoMuscular = "Pecho"),
-                        Ejercicio(nombre = "Sentadilla", series = 4, repeticiones = 8, descansoSegundos = 90, grupoMuscular = "Piernas")
-                    )
-                ),
-                Rutina(
-                    rutinaId = 2,
-                    titulo = "Brazos de Acero",
-                    descripcion = "",
-                    ejercicios = listOf(
-                        Ejercicio(nombre = "Curl de Bíceps", series = 3, repeticiones = 12, descansoSegundos = 60, grupoMuscular = "Brazos")
+            val snackbarHostState = remember { SnackbarHostState() }
+            CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
+                val mockRutinas = listOf(
+                    Rutina(
+                        rutinaId = 1,
+                        titulo = "Fuerza Espartana",
+                        descripcion = "Día pesado para romper marcas.",
+                        ejercicios = listOf(
+                            Ejercicio(nombre = "Press de Banca", series = 4, repeticiones = 8, descansoSegundos = 90, grupoMuscular = "Pecho"),
+                            Ejercicio(nombre = "Sentadilla", series = 4, repeticiones = 8, descansoSegundos = 90, grupoMuscular = "Piernas")
+                        )
+                    ),
+                    Rutina(
+                        rutinaId = 2,
+                        titulo = "Brazos de Acero",
+                        descripcion = "",
+                        ejercicios = listOf(
+                            Ejercicio(nombre = "Curl de Bíceps", series = 3, repeticiones = 12, descansoSegundos = 60, grupoMuscular = "Brazos")
+                        )
                     )
                 )
-            )
 
-            ListRutinaBodyScreen(
-                state = ListRutinaUiState(isLoading = false, rutinas = mockRutinas),
-                onEvent = {},
-                onRutinaClick = {},
-                onCreateRutina = {},
-                onTrainClick = {}
-            )
+                ListRutinaBodyScreen(
+                    state = ListRutinaUiState(isLoading = false, rutinas = mockRutinas),
+                    onEvent = {},
+                    onRutinaClick = {},
+                    onCreateRutina = {},
+                    onTrainClick = {}
+                )
+            }
         }
     }
 }

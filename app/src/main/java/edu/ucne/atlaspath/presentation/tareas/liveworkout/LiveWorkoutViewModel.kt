@@ -100,6 +100,32 @@ class LiveWorkoutViewModel @Inject constructor(
                 _state.update { it.copy(activeExercises = updatedExercises) }
             }
 
+            is LiveWorkoutEvent.AddSet -> {
+                val updatedExercises = _state.value.activeExercises.toMutableList()
+                val currentExercise = updatedExercises[event.exIndex]
+                val updatedSets = currentExercise.sets.toMutableList()
+
+                val nextSetId = if (updatedSets.isEmpty()) 1 else updatedSets.last().setId + 1
+                val defaultReps = currentExercise.ejercicio.repeticiones.toString()
+
+                updatedSets.add(ActiveSet(setId = nextSetId, reps = defaultReps))
+
+                updatedExercises[event.exIndex] = currentExercise.copy(sets = updatedSets)
+                _state.update { it.copy(activeExercises = updatedExercises) }
+            }
+
+            is LiveWorkoutEvent.RemoveSet -> {
+                val updatedExercises = _state.value.activeExercises.toMutableList()
+                val currentExercise = updatedExercises[event.exIndex]
+                val updatedSets = currentExercise.sets.toMutableList()
+
+                if (updatedSets.isNotEmpty()) {
+                    updatedSets.removeLast()
+                    updatedExercises[event.exIndex] = currentExercise.copy(sets = updatedSets)
+                    _state.update { it.copy(activeExercises = updatedExercises) }
+                }
+            }
+
             is LiveWorkoutEvent.FinalizarEntrenamiento -> guardarYTerminar()
         }
     }
@@ -115,9 +141,9 @@ class LiveWorkoutViewModel @Inject constructor(
                 activeEx.sets.forEach { set ->
                     val peso = set.weightLbs.toDoubleOrNull() ?: 0.0
                     val reps = set.reps.toIntOrNull() ?: 0
-                    if (set.isCompleted || peso > 0.0) {
-                        volumenTotal += (peso * reps)
 
+                    if (set.isCompleted && reps > 0) {
+                        volumenTotal += (peso * reps)
                         registrosFinales.add(
                             RegistroEjercicio(
                                 ejercicioNombre = activeEx.ejercicio.nombre,
@@ -128,6 +154,11 @@ class LiveWorkoutViewModel @Inject constructor(
                         )
                     }
                 }
+            }
+
+            if (registrosFinales.isEmpty()) {
+                _state.update { it.copy(entrenamientoFinalizado = true) }
+                return@launch
             }
 
             val xpTotalGanada = 500 + (volumenTotal * 0.05).toInt()
@@ -141,14 +172,9 @@ class LiveWorkoutViewModel @Inject constructor(
                 registros = registrosFinales
             )
 
-            val result = saveSesionUseCase(nuevaSesion)
-            when (result) {
-                is Resource.Success -> {
-                    _state.update { it.copy(entrenamientoFinalizado = true) }
-                }
-                is Resource.Error -> {
-                    _state.update { it.copy(entrenamientoFinalizado = true) }
-                }
+            when (saveSesionUseCase(nuevaSesion)) {
+                is Resource.Success -> _state.update { it.copy(entrenamientoFinalizado = true) }
+                is Resource.Error -> _state.update { it.copy(entrenamientoFinalizado = true) }
                 is Resource.Loading -> {}
             }
         }

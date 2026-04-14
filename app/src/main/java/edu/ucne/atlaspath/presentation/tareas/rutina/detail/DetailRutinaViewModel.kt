@@ -6,12 +6,14 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
 import edu.ucne.atlaspath.data.remote.Resource
-import edu.ucne.atlaspath.data.remote.ExerciseDbApi
+import edu.ucne.atlaspath.data.remote.dto.ExerciseDto
 import edu.ucne.atlaspath.domain.model.Ejercicio
 import edu.ucne.atlaspath.domain.model.Rutina
+import edu.ucne.atlaspath.domain.repository.RoutineRepository
 import edu.ucne.atlaspath.domain.useCase.GetRutinaDetailUseCase
 import edu.ucne.atlaspath.domain.useCase.SaveRutinaUseCase
 import edu.ucne.atlaspath.presentation.tareas.navigation.Screen
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -22,45 +24,13 @@ import javax.inject.Inject
 class DetailRutinaViewModel @Inject constructor(
     private val getRutinaDetailUseCase: GetRutinaDetailUseCase,
     private val saveRutinaUseCase: SaveRutinaUseCase,
-    private val exerciseApi: ExerciseDbApi,
+    private val repository: RoutineRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(DetailRutinaUiState())
     val state = _state.asStateFlow()
-
-    private val diccionarioBusqueda = mapOf(
-        "pecho" to "chest",
-        "espalda" to "back",
-        "pierna" to "leg",
-        "piernas" to "upper legs",
-        "brazo" to "arm",
-        "brazos" to "arms",
-        "hombro" to "shoulder",
-        "hombros" to "shoulders",
-        "abdomen" to "waist",
-        "core" to "waist",
-        "gluteo" to "glutes",
-        "glúteo" to "glutes",
-        "bicep" to "biceps",
-        "tricep" to "triceps",
-        "pantorrilla" to "calves",
-        "pantorrillas" to "calves"
-    )
-
-    private val diccionarioVista = mapOf(
-        "chest" to "Pecho",
-        "back" to "Espalda",
-        "lower legs" to "Pantorrillas",
-        "upper legs" to "Piernas (Muslos)",
-        "upper arms" to "Bíceps/Tríceps",
-        "lower arms" to "Antebrazos",
-        "shoulders" to "Hombros",
-        "waist" to "Abdomen/Core",
-        "glutes" to "Glúteos",
-        "cardio" to "Cardio",
-        "neck" to "Cuello"
-    )
+    private var searchJob: Job? = null
 
     init {
         val args = savedStateHandle.toRoute<Screen.RutinaDetail>()
@@ -77,22 +47,19 @@ class DetailRutinaViewModel @Inject constructor(
             is DetailRutinaEvent.OnSearchQueryChange -> {
                 _state.update { it.copy(searchQuery = event.query) }
                 if (event.query.length >= 3) {
-                    buscarEnApi(event.query)
+                    buscarLocalmente(event.query)
                 } else {
                     _state.update { it.copy(searchResults = emptyList()) }
                 }
             }
 
             is DetailRutinaEvent.AddEjercicio -> {
-                val musculoIngles = event.exerciseDto.target?.lowercase() ?: ""
-                val musculoEspanol = diccionarioVista[musculoIngles] ?: event.exerciseDto.target ?: "General"
-
                 val nuevoEjercicio = Ejercicio(
-                    nombre = event.exerciseDto.name.replaceFirstChar { it.uppercase() },
+                    nombre = event.exerciseDto.name,
                     series = event.series,
                     repeticiones = event.reps,
                     descansoSegundos = event.descanso,
-                    grupoMuscular = musculoEspanol,
+                    grupoMuscular = event.exerciseDto.target ?: "General",
                     gifUrl = event.exerciseDto.gifUrl,
                     instrucciones = event.exerciseDto.instructions
                 )
@@ -110,15 +77,9 @@ class DetailRutinaViewModel @Inject constructor(
                     series = 4,
                     repeticiones = 10,
                     descansoSegundos = 60,
-                    grupoMuscular = event.musculo,
-                    gifUrl = "",
-                    instrucciones = listOf("Añadido rápidamente")
+                    grupoMuscular = event.musculo
                 )
-                _state.update { it.copy(
-                    ejercicios = it.ejercicios + nuevoEjercicio,
-                    searchQuery = "",
-                    searchResults = emptyList()
-                ) }
+                _state.update { it.copy(ejercicios = it.ejercicios + nuevoEjercicio, searchQuery = "", searchResults = emptyList()) }
             }
 
             is DetailRutinaEvent.RemoveEjercicio -> {
@@ -130,30 +91,14 @@ class DetailRutinaViewModel @Inject constructor(
         }
     }
 
-    private fun buscarEnApi(queryOriginal: String) {
-        viewModelScope.launch {
+    private fun buscarLocalmente(query: String) {
+        searchJob?.cancel()
+
+        searchJob = viewModelScope.launch {
             _state.update { it.copy(isSearching = true) }
-            try {
-                var queryTraducida = queryOriginal.lowercase()
-                diccionarioBusqueda.forEach { (esp, eng) ->
-                    if (queryTraducida.contains(esp)) {
-                        queryTraducida = eng
-                    }
-                }
-
-                // AQUÍ ESTÁ LA CORRECCIÓN: Quitamos el parámetro apiKey
-                val results = exerciseApi.getExerciseByName(name = queryTraducida, limit = 20)
-
-                val translatedResults = results.map { dto ->
-                    val musculoOriginal = dto.target?.lowercase()
-                    dto.copy(
-                        target = diccionarioVista[musculoOriginal] ?: dto.target
-                    )
-                }
-
-                _state.update { it.copy(searchResults = translatedResults, isSearching = false) }
-            } catch (e: Exception) {
-                _state.update { it.copy(searchResults = emptyList(), isSearching = false) }
+            repository.searchExercisesLocal(query).collect { entities ->
+                val dtos = entities.map { ExerciseDto(it.id, it.name, it.bodyPart, it.equipment, it.target, it.gifUrl, emptyList()) }
+                _state.update { it.copy(searchResults = dtos, isSearching = false) }
             }
         }
     }
@@ -185,14 +130,17 @@ class DetailRutinaViewModel @Inject constructor(
             _state.update { it.copy(tituloError = "El título no puede estar vacío") }
             return
         }
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
+
             val rutinaAGuardar = Rutina(
                 rutinaId = currentState.rutinaId,
                 titulo = currentState.titulo,
                 descripcion = currentState.descripcion,
                 ejercicios = currentState.ejercicios
             )
+
             val result = saveRutinaUseCase(rutinaAGuardar)
             when (result) {
                 is Resource.Success -> _state.update { it.copy(isLoading = false, success = true) }

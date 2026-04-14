@@ -3,7 +3,8 @@ package edu.ucne.atlaspath.presentation.tareas.explore
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import edu.ucne.atlaspath.data.remote.ExerciseDbApi
+import edu.ucne.atlaspath.data.remote.dto.ExerciseDto // Seguimos usando el DTO para la UI temporalmente para no romper la pantalla
+import edu.ucne.atlaspath.domain.repository.RoutineRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -12,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ExerciseExplorerViewModel @Inject constructor(
-    private val api: ExerciseDbApi
+    private val repository: RoutineRepository // <-- Cambiado de API a Repository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ExplorerUiState())
@@ -33,11 +34,9 @@ class ExerciseExplorerViewModel @Inject constructor(
     private fun loadInitialExercises() {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val result = api.getAllExercises(limit = 20)
-                _state.update { it.copy(isLoading = false, exercises = result) }
-            } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+            repository.getAllExercisesLocal().collect { entities ->
+                val dtos = entities.map { ExerciseDto(it.id, it.name, it.bodyPart, it.equipment, it.target, it.gifUrl, emptyList()) }
+                _state.update { it.copy(isLoading = false, exercises = dtos) }
             }
         }
     }
@@ -49,11 +48,9 @@ class ExerciseExplorerViewModel @Inject constructor(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
-            try {
-                val result = api.getExerciseByName(name = query.lowercase(), limit = 30)
-                _state.update { it.copy(isLoading = false, exercises = result) }
-            } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = "No se encontraron ejercicios.") }
+            repository.searchExercisesLocal(query).collect { entities ->
+                val dtos = entities.map { ExerciseDto(it.id, it.name, it.bodyPart, it.equipment, it.target, it.gifUrl, emptyList()) }
+                _state.update { it.copy(isLoading = false, exercises = dtos) }
             }
         }
     }
@@ -61,11 +58,9 @@ class ExerciseExplorerViewModel @Inject constructor(
     private fun filterExercises(muscle: String) {
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null, searchQuery = "") }
-            try {
-                val result = api.getExercisesByBodyPart(bodyPart = muscle.lowercase(), limit = 30)
-                _state.update { it.copy(isLoading = false, exercises = result) }
-            } catch (e: Exception) {
-                _state.update { it.copy(isLoading = false, error = e.message) }
+            repository.getExercisesByMuscleLocal(muscle).collect { entities ->
+                val dtos = entities.map { ExerciseDto(it.id, it.name, it.bodyPart, it.equipment, it.target, it.gifUrl, emptyList()) }
+                _state.update { it.copy(isLoading = false, exercises = dtos) }
             }
         }
     }

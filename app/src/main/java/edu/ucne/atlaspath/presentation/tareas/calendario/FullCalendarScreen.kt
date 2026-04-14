@@ -1,27 +1,36 @@
+@file:Suppress("OPT_IN_USAGE", "OPT_IN_USAGE_ERROR")
+
 package edu.ucne.atlaspath.presentation.tareas.calendario
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.EventNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.atlaspath.domain.model.Sesion
-import edu.ucne.atlaspath.presentation.tareas.history.HistoryUiState // Asegúrate de que el path sea correcto
+import edu.ucne.atlaspath.presentation.tareas.history.HistoryUiState
 import edu.ucne.atlaspath.presentation.tareas.history.HistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -32,8 +41,6 @@ fun FullCalendarScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-
-    // Llamamos a la pantalla Stateless (UDF puro)
     FullCalendarBodyScreen(state = state, onBack = onBack)
 }
 
@@ -48,7 +55,7 @@ fun FullCalendarBodyScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Calendario de Batallas", fontWeight = FontWeight.Black) },
+                title = { Text("Calendario", fontWeight = FontWeight.Black) },
                 navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás") } }
             )
         }
@@ -56,72 +63,134 @@ fun FullCalendarBodyScreen(
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)
         ) {
-            Row(
+            ElevatedCard(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                shape = RoundedCornerShape(24.dp),
+                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                IconButton(onClick = {
-                    val prev = currentMonth.clone() as Calendar
-                    prev.add(Calendar.MONTH, -1)
-                    currentMonth = prev
-                }) { Icon(Icons.Default.ChevronLeft, "Mes Anterior") }
+                Column(modifier = Modifier.padding(24.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = {
+                                val prev = currentMonth.clone() as Calendar
+                                prev.add(Calendar.MONTH, -1)
+                                currentMonth = prev
+                            },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                        ) { Icon(Icons.Default.ChevronLeft, "Mes Anterior") }
 
-                Text(
-                    text = SimpleDateFormat("MMMM yyyy", Locale("es", "ES")).format(currentMonth.time).replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                        Text(
+                            text = SimpleDateFormat("MMMM yyyy", Locale("es", "ES")).format(currentMonth.time).replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Black,
+                            color = MaterialTheme.colorScheme.primary
+                        )
 
-                IconButton(onClick = {
-                    val next = currentMonth.clone() as Calendar
-                    next.add(Calendar.MONTH, 1)
-                    currentMonth = next
-                }) { Icon(Icons.Default.ChevronRight, "Mes Siguiente") }
-            }
+                        IconButton(
+                            onClick = {
+                                val next = currentMonth.clone() as Calendar
+                                next.add(Calendar.MONTH, 1)
+                                currentMonth = next
+                            },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
+                        ) { Icon(Icons.Default.ChevronRight, "Mes Siguiente") }
+                    }
 
-            Spacer(modifier = Modifier.height(24.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                listOf("Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom").forEach {
-                    Text(it, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                        listOf("LUN", "MAR", "MIÉ", "JUE", "VIE", "SÁB", "DOM").forEach {
+                            Text(it, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    val daysInMonth = getDaysForMonth(currentMonth)
+
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(7),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(daysInMonth) { dayInfo ->
+                            if (dayInfo.dayNumber == 0) {
+                                Spacer(modifier = Modifier.aspectRatio(1f))
+                            } else {
+                                val entrenoEsteDia = state.sesiones.any { sesion ->
+                                    val sCal = Calendar.getInstance().apply { timeInMillis = sesion.fechaInicio }
+                                    sCal.get(Calendar.YEAR) == currentMonth.get(Calendar.YEAR) &&
+                                            sCal.get(Calendar.MONTH) == currentMonth.get(Calendar.MONTH) &&
+                                            sCal.get(Calendar.DAY_OF_MONTH) == dayInfo.dayNumber
+                                }
+
+                                val isToday = Calendar.getInstance().let {
+                                    it.get(Calendar.YEAR) == currentMonth.get(Calendar.YEAR) &&
+                                            it.get(Calendar.MONTH) == currentMonth.get(Calendar.MONTH) &&
+                                            it.get(Calendar.DAY_OF_MONTH) == dayInfo.dayNumber
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .aspectRatio(1f)
+                                        .clip(CircleShape)
+                                        .background(
+                                            when {
+                                                entrenoEsteDia -> MaterialTheme.colorScheme.primary
+                                                isToday -> MaterialTheme.colorScheme.surfaceVariant
+                                                else -> Color.Transparent
+                                            }
+                                        )
+                                        .border(
+                                            width = if (isToday && !entrenoEsteDia) 2.dp else 0.dp,
+                                            color = if (isToday && !entrenoEsteDia) MaterialTheme.colorScheme.primary else Color.Transparent,
+                                            shape = CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = dayInfo.dayNumber.toString(),
+                                        fontWeight = if (entrenoEsteDia || isToday) FontWeight.Black else FontWeight.Medium,
+                                        fontSize = 16.sp,
+                                        color = when {
+                                            entrenoEsteDia -> MaterialTheme.colorScheme.onPrimary
+                                            isToday -> MaterialTheme.colorScheme.primary
+                                            else -> MaterialTheme.colorScheme.onSurface
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            val daysInMonth = getDaysForMonth(currentMonth)
 
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            Spacer(modifier = Modifier.height(32.dp))
+
+            OutlinedCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+                colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
             ) {
-                items(daysInMonth) { dayInfo ->
-                    if (dayInfo.dayNumber == 0) {
-                        Spacer(modifier = Modifier.size(40.dp))
-                    } else {
-                        val entrenoEsteDia = state.sesiones.any { sesion ->
-                            val sCal = Calendar.getInstance().apply { timeInMillis = sesion.fechaInicio }
-                            sCal.get(Calendar.YEAR) == currentMonth.get(Calendar.YEAR) &&
-                                    sCal.get(Calendar.MONTH) == currentMonth.get(Calendar.MONTH) &&
-                                    sCal.get(Calendar.DAY_OF_MONTH) == dayInfo.dayNumber
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .clip(CircleShape)
-                                .background(
-                                    if (entrenoEsteDia) MaterialTheme.colorScheme.primary
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                                ),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = dayInfo.dayNumber.toString(),
-                                fontWeight = FontWeight.Bold,
-                                color = if (entrenoEsteDia) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
-                            )
-                        }
+                Row(
+                    modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.EventNote, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text("Consistencia", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                        Text("Los días marcados reflejan tu disciplina.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -130,6 +199,7 @@ fun FullCalendarBodyScreen(
 }
 
 data class DayInfo(val dayNumber: Int)
+
 fun getDaysForMonth(calendar: Calendar): List<DayInfo> {
     val tempCal = calendar.clone() as Calendar
     tempCal.set(Calendar.DAY_OF_MONTH, 1)

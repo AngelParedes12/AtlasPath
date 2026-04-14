@@ -1,7 +1,9 @@
 package edu.ucne.atlaspath.data.repository
 
+import edu.ucne.atlaspath.data.local.dao.ExerciseDao
 import edu.ucne.atlaspath.data.local.dao.SessionDao
 import edu.ucne.atlaspath.data.local.dao.RoutineDao
+import edu.ucne.atlaspath.data.local.entity.ExerciseEntity
 import edu.ucne.atlaspath.data.local.mapper.toDomain
 import edu.ucne.atlaspath.data.local.mapper.toEntity
 import edu.ucne.atlaspath.data.remote.Resource
@@ -14,7 +16,8 @@ import javax.inject.Inject
 
 class RoutineRepositoryImpl @Inject constructor(
     private val routineDao: RoutineDao,
-    private val sessionDao: SessionDao
+    private val sessionDao: SessionDao,
+    private val exerciseDao: ExerciseDao
 ) : RoutineRepository {
 
     override fun getRoutines(query: String?): Flow<Resource<List<Rutina>>> = flow {
@@ -78,5 +81,16 @@ class RoutineRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             emit(Resource.Error(e.message ?: "Error al cargar el historial"))
         }
+    }
+    override fun getAllExercisesLocal(): Flow<List<ExerciseEntity>> {
+        return exerciseDao.getAllExercises()
+    }
+
+    override fun searchExercisesLocal(query: String): Flow<List<ExerciseEntity>> {
+        return exerciseDao.searchExercises(query)
+    }
+
+    override fun getExercisesByMuscleLocal(muscle: String): Flow<List<ExerciseEntity>> {
+        return exerciseDao.getExercisesByMuscle(muscle)
     }
 }

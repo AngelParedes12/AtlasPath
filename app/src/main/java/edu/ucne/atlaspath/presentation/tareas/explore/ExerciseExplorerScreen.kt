@@ -1,21 +1,30 @@
+@file:Suppress("OPT_IN_USAGE", "OPT_IN_USAGE_ERROR")
+
 package edu.ucne.atlaspath.presentation.tareas.explore
 
 import android.os.Build.VERSION.SDK_INT
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +32,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,14 +44,29 @@ import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import edu.ucne.atlaspath.data.remote.dto.ExerciseDto
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExerciseExplorerScreen(
     viewModel: ExerciseExplorerViewModel = hiltViewModel(),
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    ExerciseExplorerBodyScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = onBack
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ExerciseExplorerBodyScreen(
+    state: ExplorerUiState,
+    onEvent: (ExplorerEvent) -> Unit,
+    onBack: () -> Unit
+) {
     val context = LocalContext.current
+
     val imageLoader = remember {
         ImageLoader.Builder(context)
             .components {
@@ -55,24 +81,46 @@ fun ExerciseExplorerScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Explorador de Ejercicios", fontWeight = FontWeight.Bold) })
+            CenterAlignedTopAppBar(
+                title = { Text("Explorador", fontWeight = FontWeight.Black) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                    }
+                }
+            )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+        ) {
             OutlinedTextField(
                 value = state.searchQuery,
-                onValueChange = { viewModel.onEvent(ExplorerEvent.OnSearchQueryChange(it)) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                onValueChange = { onEvent(ExplorerEvent.OnSearchQueryChange(it)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
                 placeholder = { Text("Buscar ej: bench press...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                shape = RoundedCornerShape(16.dp),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                shape = RoundedCornerShape(20.dp),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { viewModel.onEvent(ExplorerEvent.Search) })
+                keyboardActions = KeyboardActions(onSearch = { onEvent(ExplorerEvent.Search) }),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                )
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
             val categorias = listOf("chest", "back", "legs", "shoulders", "arms")
+            var selectedCategory by rememberSaveable { mutableStateOf<String?>(null) }
+
             LazyRow(
                 modifier = Modifier.fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 16.dp),
@@ -80,9 +128,22 @@ fun ExerciseExplorerScreen(
             ) {
                 items(categorias) { category ->
                     FilterChip(
-                        selected = false,
-                        onClick = { viewModel.onEvent(ExplorerEvent.FilterByMuscle(category)) },
-                        label = { Text(category.uppercase()) }
+                        selected = selectedCategory == category,
+                        onClick = {
+                            selectedCategory = if (selectedCategory == category) null else category
+                            onEvent(ExplorerEvent.FilterByMuscle(selectedCategory ?: ""))
+                        },
+                        label = { Text(category.uppercase(), fontWeight = FontWeight.Bold) },
+                        shape = CircleShape,
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MaterialTheme.colorScheme.primary,
+                            selectedLabelColor = MaterialTheme.colorScheme.onPrimary
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = selectedCategory == category,
+                            borderColor = MaterialTheme.colorScheme.outlineVariant
+                        )
                     )
                 }
             }
@@ -91,11 +152,51 @@ fun ExerciseExplorerScreen(
 
             if (state.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
             } else if (state.error != null) {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text(state.error!!, color = MaterialTheme.colorScheme.error)
+                Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.8f),
+                        shape = RoundedCornerShape(16.dp),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(
+                            text = state.error!!,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    }
+                }
+            } else if (state.exercises.isEmpty()) {
+                Column(
+                    modifier = Modifier.fillMaxSize().padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        "Sin resultados",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Black,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        "Intenta buscar otro movimiento o selecciona un grupo muscular distinto.",
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             } else {
                 LazyColumn(
@@ -115,7 +216,6 @@ fun ExerciseExplorerScreen(
 fun ExerciseCard(exercise: ExerciseDto, imageLoader: ImageLoader) {
     val context = LocalContext.current
 
-
     val imageRequest = ImageRequest.Builder(context)
         .data(exercise.gifUrl)
         .addHeader("X-RapidAPI-Key", "Api de ejercicios")
@@ -123,23 +223,31 @@ fun ExerciseCard(exercise: ExerciseDto, imageLoader: ImageLoader) {
         .crossfade(true)
         .build()
 
-    Card(
+    OutlinedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     ) {
-        Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
-
-            AsyncImage(
-                model = imageRequest,
-                imageLoader = imageLoader,
-                contentDescription = exercise.name,
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
                 modifier = Modifier
-                    .size(100.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surface),
-                contentScale = ContentScale.Crop
-            )
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = imageRequest,
+                    imageLoader = imageLoader,
+                    contentDescription = exercise.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 
@@ -147,25 +255,107 @@ fun ExerciseCard(exercise: ExerciseDto, imageLoader: ImageLoader) {
                 Text(
                     text = exercise.name.replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Black,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2
                 )
-                Text(
-                    text = "Músculo: ${exercise.target?.uppercase() ?: "GENERAL"}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary
-                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.FitnessCenter,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = exercise.target?.uppercase() ?: "GENERAL",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = "Equipo: ${exercise.equipment ?: "Peso corporal"}",
-                    style = MaterialTheme.typography.bodySmall
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
             IconButton(
-                onClick = { /* TODO */ },
-                colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.primary)
+                onClick = { },
+                modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer)
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Agregar", tint = MaterialTheme.colorScheme.onPrimary)
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Agregar",
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.size(24.dp)
+                )
             }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ExerciseExplorerLoadingPreview() {
+    MaterialTheme {
+        Surface {
+            ExerciseExplorerBodyScreen(
+                state = ExplorerUiState(isLoading = true),
+                onEvent = {},
+                onBack = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ExerciseExplorerEmptyPreview() {
+    MaterialTheme {
+        Surface {
+            ExerciseExplorerBodyScreen(
+                state = ExplorerUiState(isLoading = false, exercises = emptyList()),
+                onEvent = {},
+                onBack = {}
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun ExerciseExplorerPopulatedPreview() {
+    MaterialTheme {
+        Surface {
+            val mockExercises = listOf(
+                ExerciseDto(
+                    id = "1",
+                    name = "Barbell Bench Press",
+                    target = "chest",
+                    equipment = "barbell",
+                    gifUrl = "",
+                    bodyPart = "chest", // <- Añadido
+                    instructions = emptyList() // <- Añadido
+                ),
+                ExerciseDto(
+                    id = "2",
+                    name = "Dumbbell Lateral Raise",
+                    target = "shoulders",
+                    equipment = "dumbbell",
+                    gifUrl = "",
+                    bodyPart = "shoulders",
+                    instructions = emptyList()
+                )
+            )
+            ExerciseExplorerBodyScreen(
+                state = ExplorerUiState(isLoading = false, exercises = mockExercises),
+                onEvent = {},
+                onBack = {}
+            )
         }
     }
 }
