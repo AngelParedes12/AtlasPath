@@ -42,8 +42,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AiCreatorScreen(
     viewModel: AiCreatorViewModel = hiltViewModel(),
-    onBack: () -> Unit,
-    onNavigateToLiveWorkout: (Int) -> Unit
+    onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val snackbarHost = LocalSnackbarHost.current
@@ -161,17 +160,17 @@ fun AiCreatorLoadingView() {
         "Calculando volumen y descansos óptimos...",
         "Compilando la rutina perfecta..."
     )
-    var fraseIndex by remember { mutableIntStateOf(0) }
+    var indiceFrase by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
         while (true) {
             delay(2500)
-            fraseIndex = (fraseIndex + 1) % frasesCarga.size
+            indiceFrase = (indiceFrase + 1) % frasesCarga.size
         }
     }
 
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val scale by infiniteTransition.animateFloat(
+    val transicionInfinita = rememberInfiniteTransition(label = "pulso")
+    val escala by transicionInfinita.animateFloat(
         initialValue = 0.8f,
         targetValue = 1.15f,
         animationSpec = infiniteRepeatable(
@@ -190,7 +189,7 @@ fun AiCreatorLoadingView() {
         Box(
             modifier = Modifier
                 .size(120.dp)
-                .scale(scale)
+                .scale(escala)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.5f))
                 .border(4.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f), CircleShape),
@@ -199,7 +198,7 @@ fun AiCreatorLoadingView() {
             Icon(Icons.Filled.SmartToy, contentDescription = null, modifier = Modifier.size(60.dp), tint = MaterialTheme.colorScheme.tertiary)
         }
         Spacer(modifier = Modifier.height(40.dp))
-        AnimatedContent(targetState = frasesCarga[fraseIndex], label = "textoCarga") { frase ->
+        AnimatedContent(targetState = frasesCarga[indiceFrase], label = "textoCarga") { frase ->
             Text(
                 text = frase,
                 style = MaterialTheme.typography.titleMedium,
@@ -310,7 +309,7 @@ fun AiCreatorInputView(state: AiCreatorUiState, onEvent: (AiCreatorEvent) -> Uni
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text("¿Qué deseas lograr hoy?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
+                Text("¿Qué deseas hacer hoy?", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black)
                 Text("AtlasPath diseñará el plan perfecto.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
