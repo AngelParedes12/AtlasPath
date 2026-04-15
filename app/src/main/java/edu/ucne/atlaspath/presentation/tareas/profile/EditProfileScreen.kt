@@ -203,6 +203,14 @@ fun IdentitySection(nombre: String, onNombreChange: (String) -> Unit) {
     }
 }
 
+// --- CLASE DE CONFIGURACIÓN PARA REDUCIR PARÁMETROS ---
+data class SliderConfig(
+    val unit: String,
+    val iconBgColor: Color,
+    val sliderColor: Color,
+    val iconContent: @Composable () -> Unit
+)
+
 @Composable
 fun BiometrySection(
     pesoLbs: Float,
@@ -220,14 +228,19 @@ fun BiometrySection(
             colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
+
+                val pesoConfig = SliderConfig(
+                    unit = "lbs",
+                    iconBgColor = MaterialTheme.colorScheme.secondaryContainer,
+                    sliderColor = MaterialTheme.colorScheme.primary,
+                    iconContent = { Icon(Icons.Default.MonitorWeight, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(18.dp)) }
+                )
+
                 BiometrySliderRow(
                     label = "Peso",
                     value = pesoLbs,
-                    unit = "lbs",
                     range = 90f..350f,
-                    icon = { Icon(Icons.Default.MonitorWeight, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(18.dp)) },
-                    iconBgColor = MaterialTheme.colorScheme.secondaryContainer,
-                    sliderColor = MaterialTheme.colorScheme.primary,
+                    config = pesoConfig,
                     onValueChange = onPesoChange
                 )
 
@@ -235,14 +248,18 @@ fun BiometrySection(
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                 Spacer(modifier = Modifier.height(24.dp))
 
+                val alturaConfig = SliderConfig(
+                    unit = "cm",
+                    iconBgColor = MaterialTheme.colorScheme.tertiaryContainer,
+                    sliderColor = MaterialTheme.colorScheme.tertiary,
+                    iconContent = { Text("↕", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onTertiaryContainer) }
+                )
+
                 BiometrySliderRow(
                     label = "Altura",
                     value = alturaCm,
-                    unit = "cm",
                     range = 140f..220f,
-                    icon = { Text("↕", fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onTertiaryContainer) },
-                    iconBgColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    sliderColor = MaterialTheme.colorScheme.tertiary,
+                    config = alturaConfig,
                     onValueChange = onAlturaChange
                 )
             }
@@ -254,33 +271,31 @@ fun BiometrySection(
 fun BiometrySliderRow(
     label: String,
     value: Float,
-    unit: String,
     range: ClosedFloatingPointRange<Float>,
-    icon: @Composable () -> Unit,
-    iconBgColor: Color,
-    sliderColor: Color,
+    config: SliderConfig,
     onValueChange: (Float) -> Unit
 ) {
     Column {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(iconBgColor), contentAlignment = Alignment.Center) {
-                    icon()
+                Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(config.iconBgColor), contentAlignment = Alignment.Center) {
+                    config.iconContent()
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(label, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
             }
-            Text("${value.toInt()} $unit", fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleLarge, color = sliderColor)
+            Text("${value.toInt()} ${config.unit}", fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleLarge, color = config.sliderColor)
         }
         Spacer(modifier = Modifier.height(8.dp))
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = range,
-            colors = SliderDefaults.colors(thumbColor = sliderColor, activeTrackColor = sliderColor)
+            colors = SliderDefaults.colors(thumbColor = config.sliderColor, activeTrackColor = config.sliderColor)
         )
     }
 }
+
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SelectionFlowRow(
