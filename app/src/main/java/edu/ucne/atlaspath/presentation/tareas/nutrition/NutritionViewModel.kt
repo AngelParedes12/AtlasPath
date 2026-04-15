@@ -74,11 +74,10 @@ class NutritionViewModel @Inject constructor(
         if (foodText.isBlank()) return
 
         viewModelScope.launch {
-            _state.update { it.copy(isSaving = true, error = null) }
             when (val result = repository.analyzeAndSaveFood(foodText)) {
                 is Resource.Success -> _state.update { it.copy(isSaving = false, foodInputText = "") }
                 is Resource.Error -> _state.update { it.copy(isSaving = false, error = result.message) }
-                is Resource.Loading -> { }
+                is Resource.Loading -> _state.update { it.copy(isSaving = true, error = null) }
             }
         }
     }
@@ -92,11 +91,10 @@ class NutritionViewModel @Inject constructor(
         if (recipeText.isBlank()) return
 
         viewModelScope.launch {
-            _state.update { it.copy(isGeneratingRecipe = true, error = null) }
             when (val result = repository.generateRecipe(recipeText)) {
                 is Resource.Success -> _state.update { it.copy(isGeneratingRecipe = false, generatedRecipe = result.data) }
                 is Resource.Error -> _state.update { it.copy(isGeneratingRecipe = false, error = result.message) }
-                is Resource.Loading -> { }
+                is Resource.Loading -> _state.update { it.copy(isGeneratingRecipe = true, error = null) }
             }
         }
     }

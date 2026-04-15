@@ -72,34 +72,12 @@ fun NutritionBodyScreen(
 
     Scaffold(
         topBar = {
-            Column {
-                CenterAlignedTopAppBar(
-                    title = { Text("Mi Nutrición", fontWeight = FontWeight.Black) },
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
-                        }
-                    }
-                )
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    contentColor = MaterialTheme.colorScheme.primary
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTabIndex == index,
-                            onClick = { selectedTabIndex = index },
-                            text = {
-                                Text(
-                                    text = title,
-                                    fontWeight = if (selectedTabIndex == index) FontWeight.ExtraBold else FontWeight.Medium
-                                )
-                            }
-                        )
-                    }
-                }
-            }
+            NutritionTopBar(
+                selectedTabIndex = selectedTabIndex,
+                tabs = tabs,
+                onTabSelected = { selectedTabIndex = it },
+                onBack = onBack
+            )
         }
     ) { padding ->
         LazyColumn(
@@ -131,88 +109,16 @@ fun NutritionBodyScreen(
                 }
 
                 item {
-                    Text(
-                        "¿Qué comiste hoy?",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = state.foodInputText,
-                        onValueChange = { onEvent(NutritionEvent.OnFoodInputChanged(it)) },
-                        placeholder = { Text("Ej: 3 huevos, 2 tostadas integrales...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        maxLines = 3,
-                        leadingIcon = { Icon(Icons.Default.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = { onEvent(NutritionEvent.AnalyzeAndSaveFood) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        enabled = state.foodInputText.isNotBlank() && !state.isSaving,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        if (state.isSaving) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 3.dp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text("Analizando con IA...")
-                        } else {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Calcular y Guardar", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
-                    }
-
-                    AnimatedVisibility(visible = state.error != null) {
-                        Text(
-                            text = state.error ?: "",
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
+                    FoodInputSection(state = state, onEvent = onEvent)
                 }
 
                 item {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                    Text(
-                        "Registro de Hoy",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    DailyRecordsHeader()
                 }
 
                 if (state.dailyRecords.isEmpty() && !state.isLoading) {
                     item {
-                        OutlinedCard(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text("Tu plato está vacío", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Registra tu primera comida del día para empezar a sumar macros a tu objetivo.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
+                        EmptyDailyRecordsCard()
                     }
                 } else {
                     items(state.dailyRecords) { record ->
@@ -227,69 +133,12 @@ fun NutritionBodyScreen(
                 }
             } else {
                 item {
-                    Text(
-                        "Crea una receta con lo que tienes",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.ExtraBold
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = state.recipeInputText,
-                        onValueChange = { onEvent(NutritionEvent.OnRecipeInputChanged(it)) },
-                        placeholder = { Text("Ej: Tengo pollo, arroz y brócoli...") },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        maxLines = 3,
-                        leadingIcon = { Icon(Icons.Default.LocalDining, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.tertiary,
-                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Button(
-                        onClick = { onEvent(NutritionEvent.GenerateRecipe) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        enabled = state.recipeInputText.isNotBlank() && !state.isGeneratingRecipe,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        if (state.isGeneratingRecipe) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onTertiary, strokeWidth = 3.dp)
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text("Cocinando receta...")
-                        } else {
-                            Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Generar Receta", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
-                    }
+                    RecipeInputSection(state = state, onEvent = onEvent)
                 }
 
                 if (state.generatedRecipe == null && !state.isGeneratingRecipe) {
                     item {
-                        OutlinedCard(
-                            modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
-                            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.1f))
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(24.dp).fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Icon(Icons.Default.LocalDining, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f))
-                                Spacer(modifier = Modifier.height(16.dp))
-                                Text("Esperando ingredientes...", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text("Dile al Chef IA qué tienes en tu cocina y te armará una receta alta en proteínas paso a paso.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        }
+                        EmptyRecipeCard()
                     }
                 } else if (state.generatedRecipe != null) {
                     item {
@@ -299,6 +148,217 @@ fun NutritionBodyScreen(
             }
 
             item { Spacer(modifier = Modifier.height(32.dp)) }
+        }
+    }
+}
+
+@Composable
+fun NutritionTopBar(
+    selectedTabIndex: Int,
+    tabs: List<String>,
+    onTabSelected: (Int) -> Unit,
+    onBack: () -> Unit
+) {
+    Column {
+        CenterAlignedTopAppBar(
+            title = { Text("Mi Nutrición", fontWeight = FontWeight.Black) },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Atrás")
+                }
+            }
+        )
+        TabRow(
+            selectedTabIndex = selectedTabIndex,
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary
+        ) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { onTabSelected(index) },
+                    text = {
+                        Text(
+                            text = title,
+                            fontWeight = if (selectedTabIndex == index) FontWeight.ExtraBold else FontWeight.Medium
+                        )
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun FoodInputSection(
+    state: NutritionUiState,
+    onEvent: (NutritionEvent) -> Unit
+) {
+    Column {
+        Text(
+            "¿Qué comiste hoy?",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = state.foodInputText,
+            onValueChange = { onEvent(NutritionEvent.OnFoodInputChanged(it)) },
+            placeholder = { Text("Ej: 3 huevos, 2 tostadas integrales...") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            maxLines = 3,
+            leadingIcon = { Icon(Icons.Default.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+            )
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = { onEvent(NutritionEvent.AnalyzeAndSaveFood) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            enabled = state.foodInputText.isNotBlank() && !state.isSaving,
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            if (state.isSaving) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 3.dp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Analizando con IA...")
+            } else {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Calcular y Guardar", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+
+        AnimatedVisibility(visible = state.error != null) {
+            Text(
+                text = state.error ?: "",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun RecipeInputSection(
+    state: NutritionUiState,
+    onEvent: (NutritionEvent) -> Unit
+) {
+    Column {
+        Text(
+            "Crea una receta con lo que tienes",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        OutlinedTextField(
+            value = state.recipeInputText,
+            onValueChange = { onEvent(NutritionEvent.OnRecipeInputChanged(it)) },
+            placeholder = { Text("Ej: Tengo pollo, arroz y brócoli...") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            maxLines = 3,
+            leadingIcon = { Icon(Icons.Default.LocalDining, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary) },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.tertiary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+            )
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Button(
+            onClick = { onEvent(NutritionEvent.GenerateRecipe) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            enabled = state.recipeInputText.isNotBlank() && !state.isGeneratingRecipe,
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            if (state.isGeneratingRecipe) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onTertiary, strokeWidth = 3.dp)
+                Spacer(modifier = Modifier.width(12.dp))
+                Text("Cocinando receta...")
+            } else {
+                Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Generar Receta", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun DailyRecordsHeader() {
+    Column {
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        Text(
+            "Registro de Hoy",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}
+
+@Composable
+fun EmptyDailyRecordsCard() {
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Tu plato está vacío", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Registra tu primera comida del día para empezar a sumar macros a tu objetivo.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+fun EmptyRecipeCard() {
+    OutlinedCard(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(Icons.Default.LocalDining, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f))
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Esperando ingredientes...", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Dile al Chef IA qué tienes en tu cocina y te armará una receta alta en proteínas paso a paso.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

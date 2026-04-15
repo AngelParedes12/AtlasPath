@@ -10,6 +10,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
+
+
+
 @HiltViewModel
 class OnboardingViewModel @Inject constructor(
     private val userPreferences: UserPreferences
@@ -20,17 +24,17 @@ class OnboardingViewModel @Inject constructor(
 
     fun onEvent(event: OnboardingEvent) {
         when (event) {
-            is OnboardingEvent.OnNombreChange -> _state.update { it.copy(nombre = event.nombre) }
+            is OnboardingEvent.OnNombreChange -> _state.update { it.copy(nombre = event.nombre, error = null) }
             is OnboardingEvent.OnNivelChange -> _state.update { it.copy(nivel = event.nivel) }
             is OnboardingEvent.OnObjetivoChange -> _state.update { it.copy(objetivo = event.objetivo) }
-            OnboardingEvent.FinalizarOnboarding -> guardarPerfil()
+            OnboardingEvent.FinalizarOnboarding -> guardarDatosBasicos()
         }
     }
 
-    private fun guardarPerfil() {
+    private fun guardarDatosBasicos() {
         val currentState = _state.value
         if (currentState.nombre.isBlank()) {
-            _state.update { it.copy(error = "Por favor, dinos tu nombre") }
+            _state.update { it.copy(error = "Por favor, dinos tu nombre de atleta") }
             return
         }
 
@@ -38,17 +42,6 @@ class OnboardingViewModel @Inject constructor(
             _state.update { it.copy(isLoading = true) }
             try {
                 userPreferences.saveUserName(currentState.nombre)
-                userPreferences.savePhysicalProfile(
-                    age = 0,
-                    weightLbs = 0f,
-                    heightCm = 0f,
-                    somatotype = "",
-                    goal = currentState.objetivo,
-                    gymLevel = currentState.nivel,
-                    gender = ""
-                )
-                userPreferences.saveOnboardingCompleted(true)
-
                 _state.update { it.copy(isLoading = false, success = true) }
             } catch (e: Exception) {
                 _state.update { it.copy(isLoading = false, error = e.message) }

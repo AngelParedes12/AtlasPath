@@ -141,11 +141,10 @@ class DetailRutinaViewModel @Inject constructor(
                 ejercicios = currentState.ejercicios
             )
 
-            val result = saveRutinaUseCase(rutinaAGuardar)
-            when (result) {
+            when (val result = saveRutinaUseCase(rutinaAGuardar)) {
                 is Resource.Success -> _state.update { it.copy(isLoading = false, success = true) }
                 is Resource.Error -> _state.update { it.copy(isLoading = false, error = result.message) }
-                is Resource.Loading -> { }
+                is Resource.Loading -> _state.update { it.copy(isLoading = true) }
             }
         }
     }

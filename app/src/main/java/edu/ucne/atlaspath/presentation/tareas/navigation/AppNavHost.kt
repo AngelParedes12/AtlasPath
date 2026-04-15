@@ -33,11 +33,10 @@ import edu.ucne.atlaspath.presentation.tareas.aicreator.AiCreatorScreen
 import edu.ucne.atlaspath.presentation.tareas.liveworkout.LiveWorkoutScreen
 import edu.ucne.atlaspath.presentation.tareas.explore.ExerciseExplorerScreen
 import edu.ucne.atlaspath.presentation.tareas.history.HistoryScreen
-import edu.ucne.atlaspath.presentation.tareas.onboarding.PhysicalProfileViewModel
 import edu.ucne.atlaspath.presentation.tareas.calendario.FullCalendarScreen
 import edu.ucne.atlaspath.presentation.tareas.nutrition.NutritionScreen
-import edu.ucne.atlaspath.presentation.tareas.profile.EditProfileScreen
 import edu.ucne.atlaspath.presentation.tareas.profile.ProfileScreen
+import edu.ucne.atlaspath.presentation.tareas.profile.EditProfileScreen
 
 val LocalSnackbarHost = compositionLocalOf<SnackbarHostState> { error("No SnackbarHostState provided") }
 
@@ -48,6 +47,7 @@ fun AppNavHost(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
     val showBottomBar = currentRoute?.let { route ->
         route.contains("Dashboard") ||
                 route.contains("RutinaList") ||
@@ -86,14 +86,11 @@ fun AppNavHost(
                 }
 
                 composable<Screen.PhysicalProfile> {
-                    val viewModel: PhysicalProfileViewModel = hiltViewModel()
                     PhysicalProfileScreen(
                         onBack = { navController.popBackStack() },
-                        onProfileSaved = { age, weight, height, somatotype, goal, level, gender ->
-                            viewModel.saveProfile(age, weight, height, somatotype, goal, level, gender) {
-                                navController.navigate(Screen.SanctuaryLoading) {
-                                    popUpTo(Screen.Onboarding) { inclusive = true }
-                                }
+                        onProfileSaved = {
+                            navController.navigate(Screen.SanctuaryLoading) {
+                                popUpTo<Screen.Onboarding> { inclusive = true }
                             }
                         }
                     )
@@ -103,7 +100,7 @@ fun AppNavHost(
                     SanctuaryLoadingScreen(
                         onLoadingComplete = {
                             navController.navigate(Screen.Dashboard) {
-                                popUpTo(Screen.SanctuaryLoading) { inclusive = true }
+                                popUpTo<Screen.SanctuaryLoading> { inclusive = true }
                             }
                         }
                     )
@@ -115,7 +112,6 @@ fun AppNavHost(
 
                     DashboardScreen(
                         viewModel = dashboardViewModel,
-                        onNavigateToGenerador = { navController.navigate(Screen.AiCreator) },
                         onNavigateToBiblioteca = { navController.navigate(Screen.RutinaList) },
                         onNavigateToRutina = { id -> navController.navigate(Screen.LiveWorkout(id)) },
                         onCreateRutina = { navController.navigate(Screen.RutinaDetail(0)) },
@@ -136,14 +132,22 @@ fun AppNavHost(
                 composable<Screen.RutinaDetail> {
                     DetailRutinaScreen(
                         onBack = { navController.navigateUp() },
-                        onNavigateToAi = { navController.navigate(Screen.AiCreator) { popUpTo(Screen.RutinaDetail) { inclusive = true } } }
+                        onNavigateToAi = {
+                            navController.navigate(Screen.AiCreator) {
+                                popUpTo<Screen.RutinaDetail> { inclusive = true }
+                            }
+                        }
                     )
                 }
 
                 composable<Screen.AiCreator> {
                     AiCreatorScreen(
                         onBack = { navController.navigateUp() },
-                        onNavigateToLiveWorkout = { id -> navController.navigate(Screen.LiveWorkout(id)) { popUpTo(Screen.AiCreator) { inclusive = true } } }
+                        onNavigateToLiveWorkout = { id ->
+                            navController.navigate(Screen.LiveWorkout(id)) {
+                                popUpTo<Screen.AiCreator> { inclusive = true }
+                            }
+                        }
                     )
                 }
 
@@ -153,8 +157,7 @@ fun AppNavHost(
 
                 composable<Screen.Profile> {
                     ProfileScreen(
-                        onNavigateToEditProfile = { },
-                        onNavigateToSettings = { },
+                        onNavigateToEditProfile = { navController.navigate(Screen.EditProfile) },
                         onLogout = {
                             navController.navigate(Screen.Onboarding) {
                                 popUpTo(0) { inclusive = true }
@@ -162,12 +165,18 @@ fun AppNavHost(
                         }
                     )
                 }
+
                 composable<Screen.EditProfile> {
                     EditProfileScreen(onBack = { navController.navigateUp() })
                 }
+
                 composable<Screen.LiveWorkout> {
                     LiveWorkoutScreen(
-                        onFinish = { navController.navigate(Screen.Dashboard) { popUpTo(Screen.Dashboard) { inclusive = true } } },
+                        onFinish = {
+                            navController.navigate(Screen.Dashboard) {
+                                popUpTo<Screen.Dashboard> { inclusive = true }
+                            }
+                        },
                         onCancel = { navController.navigateUp() }
                     )
                 }
@@ -192,7 +201,7 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
     ) {
         val isDashboard = currentRoute?.contains("Dashboard") == true
         NavigationBarItem(
-            icon = { Icon(Icons.Filled.Home, contentDescription = "Inicio") },
+            icon = { Icon(Icons.Filled.Home, contentDescription = null) },
             label = { Text("Inicio", fontWeight = if (isDashboard) FontWeight.Bold else FontWeight.Normal) },
             selected = isDashboard,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer, selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer),
@@ -201,7 +210,7 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
 
         val isRutinaList = currentRoute?.contains("RutinaList") == true
         NavigationBarItem(
-            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Biblioteca") },
+            icon = { Icon(Icons.AutoMirrored.Filled.List, contentDescription = null) },
             label = { Text("Biblioteca", fontWeight = if (isRutinaList) FontWeight.Bold else FontWeight.Normal) },
             selected = isRutinaList,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer, selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer),
@@ -210,7 +219,7 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
 
         val isNutrition = currentRoute?.contains("Nutrition") == true
         NavigationBarItem(
-            icon = { Icon(Icons.Filled.Restaurant, contentDescription = "Nutrición") },
+            icon = { Icon(Icons.Filled.Restaurant, contentDescription = null) },
             label = { Text("Nutrición", fontWeight = if (isNutrition) FontWeight.Bold else FontWeight.Normal) },
             selected = isNutrition,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.tertiaryContainer, selectedIconColor = MaterialTheme.colorScheme.onTertiaryContainer),
@@ -219,7 +228,7 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
 
         val isProfile = currentRoute?.contains("Profile") == true
         NavigationBarItem(
-            icon = { Icon(Icons.Filled.Person, contentDescription = "Perfil") },
+            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
             label = { Text("Perfil", fontWeight = if (isProfile) FontWeight.Bold else FontWeight.Normal) },
             selected = isProfile,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer, selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer),

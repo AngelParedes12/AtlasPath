@@ -33,6 +33,30 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Provider
 import javax.inject.Singleton
 
+private object GymConstants {
+    const val EQ_BARRA = "Barra"
+    const val EQ_MANCUERNAS = "Mancuernas"
+    const val EQ_MAQUINA = "Máquina"
+    const val EQ_POLEA = "Polea"
+    const val EQ_PESO_CORPORAL = "Peso Corporal"
+
+    const val MUSCLE_PECHO = "Pecho"
+    const val MUSCLE_ESPALDA = "Espalda"
+    const val MUSCLE_HOMBROS = "Hombros"
+    const val MUSCLE_BICEPS = "Bíceps"
+    const val MUSCLE_TRICEPS = "Tríceps"
+    const val MUSCLE_BRAZOS = "Brazos"
+    const val MUSCLE_PIERNAS = "Piernas"
+    const val MUSCLE_CUADRICEPS = "Cuádriceps"
+    const val MUSCLE_GLUTEOS = "Glúteos"
+    const val MUSCLE_ISQUIOS = "Isquiotibiales"
+    const val MUSCLE_PIERNAS_GLUTEOS = "Piernas/Glúteos"
+    const val MUSCLE_CORE = "Core"
+    const val MUSCLE_ABDOMEN = "Abdomen"
+    const val MUSCLE_FULL_BODY = "Full Body"
+    const val MUSCLE_CARDIO = "Cardio"
+}
+
 @Module
 @InstallIn(SingletonComponent::class)
 object AppModule {
@@ -105,7 +129,7 @@ object AppModule {
     @Singleton
     fun provideGeminiApi(moshi: Moshi, client: OkHttpClient): GeminiApi {
         return Retrofit.Builder()
-            .baseUrl("https://generativelanguage.googleapis.com/")
+            .baseUrl("[https://generativelanguage.googleapis.com/](https://generativelanguage.googleapis.com/)")
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
@@ -115,109 +139,109 @@ object AppModule {
     private fun obtenerEjerciciosBase(): List<ExerciseEntity> {
         return listOf(
             // PECHO
-            ExerciseEntity("1", "Press de Banca con Barra", "Pecho", "Pecho", equipment = "Barra"),
-            ExerciseEntity("2", "Press de Banca con Mancuernas", "Pecho", "Pecho", equipment = "Mancuernas"),
-            ExerciseEntity("3", "Press Inclinado con Barra", "Pecho", "Pecho", equipment = "Barra"),
-            ExerciseEntity("4", "Press Inclinado con Mancuernas", "Pecho", "Pecho", equipment = "Mancuernas"),
-            ExerciseEntity("5", "Press Declinado con Barra", "Pecho", "Pecho", equipment = "Barra"),
-            ExerciseEntity("6", "Aperturas con Mancuernas", "Pecho", "Pecho", equipment = "Mancuernas"),
-            ExerciseEntity("7", "Aperturas en Máquina (Pec Deck)", "Pecho", "Pecho", equipment = "Máquina"),
-            ExerciseEntity("8", "Cruce de Poleas Altas", "Pecho", "Pecho", equipment = "Polea"),
-            ExerciseEntity("9", "Cruce de Poleas Bajas", "Pecho", "Pecho", equipment = "Polea"),
-            ExerciseEntity("10", "Flexiones (Push-ups)", "Pecho", "Pecho", equipment = "Peso Corporal"),
-            ExerciseEntity("11", "Fondos en Paralelas (Dips)", "Pecho/Tríceps", "Brazos", equipment = "Peso Corporal"),
-            ExerciseEntity("12", "Pullover con Mancuerna", "Pecho/Espalda", "Pecho", equipment = "Mancuernas"),
+            ExerciseEntity("1", "Press de Banca con Barra", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("2", "Press de Banca con Mancuernas", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("3", "Press Inclinado con Barra", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("4", "Press Inclinado con Mancuernas", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("5", "Press Declinado con Barra", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("6", "Aperturas con Mancuernas", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("7", "Aperturas en Máquina (Pec Deck)", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("8", "Cruce de Poleas Altas", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("9", "Cruce de Poleas Bajas", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("10", "Flexiones (Push-ups)", GymConstants.MUSCLE_PECHO, GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("11", "Fondos en Paralelas (Dips)", "${GymConstants.MUSCLE_PECHO}/${GymConstants.MUSCLE_TRICEPS}", GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("12", "Pullover con Mancuerna", "${GymConstants.MUSCLE_PECHO}/${GymConstants.MUSCLE_ESPALDA}", GymConstants.MUSCLE_PECHO, equipment = GymConstants.EQ_MANCUERNAS),
 
             // ESPALDA
-            ExerciseEntity("13", "Dominadas (Pull-ups)", "Espalda", "Espalda", equipment = "Peso Corporal"),
-            ExerciseEntity("14", "Dominadas Supinas (Chin-ups)", "Espalda/Bíceps", "Espalda", equipment = "Peso Corporal"),
-            ExerciseEntity("15", "Jalón al Pecho en Polea", "Espalda", "Espalda", equipment = "Polea"),
-            ExerciseEntity("16", "Jalón tras Nuca", "Espalda", "Espalda", equipment = "Polea"),
-            ExerciseEntity("17", "Remo con Barra", "Espalda", "Espalda", equipment = "Barra"),
-            ExerciseEntity("18", "Remo con Mancuerna a una Mano", "Espalda", "Espalda", equipment = "Mancuernas"),
-            ExerciseEntity("19", "Remo en Máquina (Sentado)", "Espalda", "Espalda", equipment = "Máquina"),
-            ExerciseEntity("20", "Remo al Cuello (Polea o Barra)", "Espalda/Trapecio", "Espalda", equipment = "Polea"),
-            ExerciseEntity("21", "Pull-over en Polea Alta", "Espalda", "Espalda", equipment = "Polea"),
-            ExerciseEntity("22", "Peso Muerto Convencional", "Espalda/Piernas", "Espalda", equipment = "Barra"),
-            ExerciseEntity("23", "Peso Muerto Rumano", "Isquiotibiales/Espalda", "Espalda", equipment = "Barra"),
-            ExerciseEntity("24", "Hiperextensiones (Lumbares)", "Espalda Baja", "Espalda", equipment = "Peso Corporal"),
+            ExerciseEntity("13", "Dominadas (Pull-ups)", GymConstants.MUSCLE_ESPALDA, GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("14", "Dominadas Supinas (Chin-ups)", "${GymConstants.MUSCLE_ESPALDA}/${GymConstants.MUSCLE_BICEPS}", GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("15", "Jalón al Pecho en Polea", GymConstants.MUSCLE_ESPALDA, GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("16", "Jalón tras Nuca", GymConstants.MUSCLE_ESPALDA, GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("17", "Remo con Barra", GymConstants.MUSCLE_ESPALDA, GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("18", "Remo con Mancuerna a una Mano", GymConstants.MUSCLE_ESPALDA, GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("19", "Remo en Máquina (Sentado)", GymConstants.MUSCLE_ESPALDA, GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("20", "Remo al Cuello (Polea o Barra)", "${GymConstants.MUSCLE_ESPALDA}/Trapecio", GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("21", "Pull-over en Polea Alta", GymConstants.MUSCLE_ESPALDA, GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("22", "Peso Muerto Convencional", "${GymConstants.MUSCLE_ESPALDA}/${GymConstants.MUSCLE_PIERNAS}", GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("23", "Peso Muerto Rumano", "${GymConstants.MUSCLE_ISQUIOS}/${GymConstants.MUSCLE_ESPALDA}", GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("24", "Hiperextensiones (Lumbares)", "Espalda Baja", GymConstants.MUSCLE_ESPALDA, equipment = GymConstants.EQ_PESO_CORPORAL),
 
             // HOMBROS
-            ExerciseEntity("25", "Press Militar con Barra", "Hombros", "Hombros", equipment = "Barra"),
-            ExerciseEntity("26", "Press Militar con Mancuernas", "Hombros", "Hombros", equipment = "Mancuernas"),
-            ExerciseEntity("27", "Press Arnold", "Hombros", "Hombros", equipment = "Mancuernas"),
-            ExerciseEntity("28", "Elevaciones Laterales con Mancuernas", "Hombros", "Hombros", equipment = "Mancuernas"),
-            ExerciseEntity("29", "Elevaciones Laterales en Polea", "Hombros", "Hombros", equipment = "Polea"),
-            ExerciseEntity("30", "Elevaciones Frontales con Mancuernas", "Hombros", "Hombros", equipment = "Mancuernas"),
-            ExerciseEntity("31", "Elevaciones Frontales con Barra", "Hombros", "Hombros", equipment = "Barra"),
-            ExerciseEntity("32", "Pájaro (Aperturas Posteriores)", "Hombro Posterior", "Hombros", equipment = "Mancuernas"),
-            ExerciseEntity("33", "Face Pull en Polea", "Hombro Posterior/Rotadores", "Hombros", equipment = "Polea"),
-            ExerciseEntity("34", "Encogimientos de Hombros (Trapecio)", "Trapecio", "Hombros", equipment = "Barra/Mancuernas"),
-            ExerciseEntity("35", "Press Tras Nuca con Barra", "Hombros", "Hombros", equipment = "Barra"),
+            ExerciseEntity("25", "Press Militar con Barra", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("26", "Press Militar con Mancuernas", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("27", "Press Arnold", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("28", "Elevaciones Laterales con Mancuernas", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("29", "Elevaciones Laterales en Polea", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("30", "Elevaciones Frontales con Mancuernas", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("31", "Elevaciones Frontales con Barra", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("32", "Pájaro (Aperturas Posteriores)", "Hombro Posterior", GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("33", "Face Pull en Polea", "Hombro Posterior/Rotadores", GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("34", "Encogimientos de Hombros (Trapecio)", "Trapecio", GymConstants.MUSCLE_HOMBROS, equipment = "${GymConstants.EQ_BARRA}/${GymConstants.EQ_MANCUERNAS}"),
+            ExerciseEntity("35", "Press Tras Nuca con Barra", GymConstants.MUSCLE_HOMBROS, GymConstants.MUSCLE_HOMBROS, equipment = GymConstants.EQ_BARRA),
 
             // BÍCEPS
-            ExerciseEntity("36", "Curl de Bíceps con Barra", "Bíceps", "Brazos", equipment = "Barra"),
-            ExerciseEntity("37", "Curl de Bíceps con Mancuernas", "Bíceps", "Brazos", equipment = "Mancuernas"),
-            ExerciseEntity("38", "Curl Martillo", "Bíceps/Braquial", "Brazos", equipment = "Mancuernas"),
-            ExerciseEntity("39", "Curl Predicador con Barra Z", "Bíceps", "Brazos", equipment = "Barra Z"),
-            ExerciseEntity("40", "Curl Predicador con Mancuerna", "Bíceps", "Brazos", equipment = "Mancuernas"),
-            ExerciseEntity("41", "Curl Concentrado", "Bíceps", "Brazos", equipment = "Mancuernas"),
-            ExerciseEntity("42", "Curl en Polea Baja", "Bíceps", "Brazos", equipment = "Polea"),
-            ExerciseEntity("43", "Curl en Polea Alta (Curl Araña)", "Bíceps", "Brazos", equipment = "Polea"),
+            ExerciseEntity("36", "Curl de Bíceps con Barra", GymConstants.MUSCLE_BICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("37", "Curl de Bíceps con Mancuernas", GymConstants.MUSCLE_BICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("38", "Curl Martillo", "${GymConstants.MUSCLE_BICEPS}/Braquial", GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("39", "Curl Predicador con Barra Z", GymConstants.MUSCLE_BICEPS, GymConstants.MUSCLE_BRAZOS, equipment = "Barra Z"),
+            ExerciseEntity("40", "Curl Predicador con Mancuerna", GymConstants.MUSCLE_BICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("41", "Curl Concentrado", GymConstants.MUSCLE_BICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("42", "Curl en Polea Baja", GymConstants.MUSCLE_BICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("43", "Curl en Polea Alta (Curl Araña)", GymConstants.MUSCLE_BICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_POLEA),
 
             // TRÍCEPS
-            ExerciseEntity("44", "Extensión de Tríceps en Polea", "Tríceps", "Brazos", equipment = "Polea"),
-            ExerciseEntity("45", "Extensión de Tríceps con Mancuerna a dos Manos", "Tríceps", "Brazos", equipment = "Mancuernas"),
-            ExerciseEntity("46", "Extensión de Tríceps con Barra (Press Francés)", "Tríceps", "Brazos", equipment = "Barra Z"),
-            ExerciseEntity("47", "Patada de Tríceps con Mancuerna", "Tríceps", "Brazos", equipment = "Mancuernas"),
-            ExerciseEntity("48", "Fondos en Banco (Tríceps)", "Tríceps", "Brazos", equipment = "Peso Corporal"),
-            ExerciseEntity("49", "Press de Banca con Agarre Cerrado", "Tríceps/Pecho", "Brazos", equipment = "Barra"),
-            ExerciseEntity("50", "Extensión de Tríceps en Polea con Cuerda", "Tríceps", "Brazos", equipment = "Polea"),
+            ExerciseEntity("44", "Extensión de Tríceps en Polea", GymConstants.MUSCLE_TRICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("45", "Extensión de Tríceps con Mancuerna a dos Manos", GymConstants.MUSCLE_TRICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("46", "Extensión de Tríceps con Barra (Press Francés)", GymConstants.MUSCLE_TRICEPS, GymConstants.MUSCLE_BRAZOS, equipment = "Barra Z"),
+            ExerciseEntity("47", "Patada de Tríceps con Mancuerna", GymConstants.MUSCLE_TRICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("48", "Fondos en Banco (Tríceps)", GymConstants.MUSCLE_TRICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("49", "Press de Banca con Agarre Cerrado", "${GymConstants.MUSCLE_TRICEPS}/${GymConstants.MUSCLE_PECHO}", GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("50", "Extensión de Tríceps en Polea con Cuerda", GymConstants.MUSCLE_TRICEPS, GymConstants.MUSCLE_BRAZOS, equipment = GymConstants.EQ_POLEA),
 
-            // PIERNAS (Cuádriceps / Glúteos / Isquios)
-            ExerciseEntity("51", "Sentadilla con Barra (Back Squat)", "Piernas/Glúteos", "Piernas", equipment = "Barra"),
-            ExerciseEntity("52", "Sentadilla Frontal", "Cuádriceps", "Piernas", equipment = "Barra"),
-            ExerciseEntity("53", "Prensa de Piernas", "Piernas", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("54", "Hack Squat", "Cuádriceps", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("55", "Extensiones de Cuádriceps en Máquina", "Cuádriceps", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("56", "Zancadas (Lunges) con Mancuernas", "Piernas/Glúteos", "Piernas", equipment = "Mancuernas"),
-            ExerciseEntity("57", "Zancadas con Barra", "Piernas/Glúteos", "Piernas", equipment = "Barra"),
-            ExerciseEntity("58", "Peso Muerto Rumano", "Isquiotibiales", "Piernas", equipment = "Barra"),
-            ExerciseEntity("59", "Curl de Femoral en Máquina", "Isquiotibiales", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("60", "Curl de Femoral de Pie", "Isquiotibiales", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("61", "Hip Thrust con Barra", "Glúteos", "Piernas", equipment = "Barra"),
-            ExerciseEntity("62", "Puente de Glúteos en Suelo", "Glúteos", "Piernas", equipment = "Peso Corporal"),
-            ExerciseEntity("63", "Patada de Glúteo en Polea", "Glúteos", "Piernas", equipment = "Polea"),
-            ExerciseEntity("64", "Abducción de Cadera en Máquina", "Glúteo Medio", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("65", "Aducción de Cadera en Máquina", "Aductores", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("66", "Sentadilla Búlgara", "Piernas/Glúteos", "Piernas", equipment = "Mancuernas/Peso Corporal"),
+            // PIERNAS
+            ExerciseEntity("51", "Sentadilla con Barra (Back Squat)", GymConstants.MUSCLE_PIERNAS_GLUTEOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("52", "Sentadilla Frontal", GymConstants.MUSCLE_CUADRICEPS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("53", "Prensa de Piernas", GymConstants.MUSCLE_PIERNAS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("54", "Hack Squat", GymConstants.MUSCLE_CUADRICEPS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("55", "Extensiones de Cuádriceps en Máquina", GymConstants.MUSCLE_CUADRICEPS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("56", "Zancadas (Lunges) con Mancuernas", GymConstants.MUSCLE_PIERNAS_GLUTEOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("57", "Zancadas con Barra", GymConstants.MUSCLE_PIERNAS_GLUTEOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("58", "Peso Muerto Rumano", GymConstants.MUSCLE_ISQUIOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("59", "Curl de Femoral en Máquina", GymConstants.MUSCLE_ISQUIOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("60", "Curl de Femoral de Pie", GymConstants.MUSCLE_ISQUIOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("61", "Hip Thrust con Barra", GymConstants.MUSCLE_GLUTEOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("62", "Puente de Glúteos en Suelo", GymConstants.MUSCLE_GLUTEOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("63", "Patada de Glúteo en Polea", GymConstants.MUSCLE_GLUTEOS, GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_POLEA),
+            ExerciseEntity("64", "Abducción de Cadera en Máquina", "Glúteo Medio", GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("65", "Aducción de Cadera en Máquina", "Aductores", GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("66", "Sentadilla Búlgara", GymConstants.MUSCLE_PIERNAS_GLUTEOS, GymConstants.MUSCLE_PIERNAS, equipment = "${GymConstants.EQ_MANCUERNAS}/${GymConstants.EQ_PESO_CORPORAL}"),
 
             // PANTORRILLAS
-            ExerciseEntity("67", "Elevación de Pantorrillas de Pie", "Pantorrillas", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("68", "Elevación de Pantorrillas Sentado", "Sóleo", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("69", "Elevación de Pantorrillas en Prensa", "Pantorrillas", "Piernas", equipment = "Máquina"),
-            ExerciseEntity("70", "Burpees", "Full Body", "Cardio", equipment = "Peso Corporal"),
+            ExerciseEntity("67", "Elevación de Pantorrillas de Pie", "Pantorrillas", GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("68", "Elevación de Pantorrillas Sentado", "Sóleo", GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("69", "Elevación de Pantorrillas en Prensa", "Pantorrillas", GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("70", "Burpees", GymConstants.MUSCLE_FULL_BODY, GymConstants.MUSCLE_CARDIO, equipment = GymConstants.EQ_PESO_CORPORAL),
 
             // ABDOMEN / CORE
-            ExerciseEntity("71", "Plancha (Plank)", "Core", "Abdomen", equipment = "Peso Corporal"),
-            ExerciseEntity("72", "Plancha Lateral", "Oblicuos", "Abdomen", equipment = "Peso Corporal"),
-            ExerciseEntity("73", "Crunch Abdominal en Suelo", "Recto Abdominal", "Abdomen", equipment = "Peso Corporal"),
-            ExerciseEntity("74", "Crunch en Máquina", "Recto Abdominal", "Abdomen", equipment = "Máquina"),
-            ExerciseEntity("75", "Elevaciones de Piernas Colgado", "Abdominales Inferiores", "Abdomen", equipment = "Peso Corporal"),
-            ExerciseEntity("76", "Elevaciones de Piernas en Suelo", "Abdominales Inferiores", "Abdomen", equipment = "Peso Corporal"),
-            ExerciseEntity("77", "Giros Rusos con Peso", "Oblicuos", "Abdomen", equipment = "Mancuernas/Disco"),
-            ExerciseEntity("78", "Rueda Abdominal", "Core", "Abdomen", equipment = "Rueda"),
-            ExerciseEntity("79", "Mountain Climbers", "Core/Cardio", "Abdomen", equipment = "Peso Corporal"),
+            ExerciseEntity("71", "Plancha (Plank)", GymConstants.MUSCLE_CORE, GymConstants.MUSCLE_ABDOMEN, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("72", "Plancha Lateral", "Oblicuos", GymConstants.MUSCLE_ABDOMEN, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("73", "Crunch Abdominal en Suelo", "Recto Abdominal", GymConstants.MUSCLE_ABDOMEN, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("74", "Crunch en Máquina", "Recto Abdominal", GymConstants.MUSCLE_ABDOMEN, equipment = GymConstants.EQ_MAQUINA),
+            ExerciseEntity("75", "Elevaciones de Piernas Colgado", "Abdominales Inferiores", GymConstants.MUSCLE_ABDOMEN, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("76", "Elevaciones de Piernas en Suelo", "Abdominales Inferiores", GymConstants.MUSCLE_ABDOMEN, equipment = GymConstants.EQ_PESO_CORPORAL),
+            ExerciseEntity("77", "Giros Rusos con Peso", "Oblicuos", GymConstants.MUSCLE_ABDOMEN, equipment = "${GymConstants.EQ_MANCUERNAS}/Disco"),
+            ExerciseEntity("78", "Rueda Abdominal", GymConstants.MUSCLE_CORE, GymConstants.MUSCLE_ABDOMEN, equipment = "Rueda"),
+            ExerciseEntity("79", "Mountain Climbers", "${GymConstants.MUSCLE_CORE}/${GymConstants.MUSCLE_CARDIO}", GymConstants.MUSCLE_ABDOMEN, equipment = GymConstants.EQ_PESO_CORPORAL),
 
             // FUNCIONAL / OTROS
-            ExerciseEntity("80", "Kettlebell Swing", "Full Body", "Cardio", equipment = "Kettlebell"),
-            ExerciseEntity("81", "Peso Muerto Sumo", "Piernas/Espalda", "Piernas", equipment = "Barra"),
-            ExerciseEntity("82", "Snatch con Mancuerna", "Full Body", "Olímpico", equipment = "Mancuernas"),
-            ExerciseEntity("83", "Clean and Press", "Full Body", "Olímpico", equipment = "Barra"),
-            ExerciseEntity("84", "Box Jumps", "Piernas", "Pliométrico", equipment = "Cajón"),
-            ExerciseEntity("85", "Saltos a la Comba", "Full Body", "Cardio", equipment = "Comba"),
-            ExerciseEntity("86", "Battle Ropes", "Full Body", "Cardio", equipment = "Cuerdas"),
-            ExerciseEntity("87", "Remo en Máquina (Ergómetro)", "Full Body", "Cardio", equipment = "Máquina"),
+            ExerciseEntity("80", "Kettlebell Swing", GymConstants.MUSCLE_FULL_BODY, GymConstants.MUSCLE_CARDIO, equipment = "Kettlebell"),
+            ExerciseEntity("81", "Peso Muerto Sumo", "${GymConstants.MUSCLE_PIERNAS}/${GymConstants.MUSCLE_ESPALDA}", GymConstants.MUSCLE_PIERNAS, equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("82", "Snatch con Mancuerna", GymConstants.MUSCLE_FULL_BODY, "Olímpico", equipment = GymConstants.EQ_MANCUERNAS),
+            ExerciseEntity("83", "Clean and Press", GymConstants.MUSCLE_FULL_BODY, "Olímpico", equipment = GymConstants.EQ_BARRA),
+            ExerciseEntity("84", "Box Jumps", GymConstants.MUSCLE_PIERNAS, "Pliométrico", equipment = "Cajón"),
+            ExerciseEntity("85", "Saltos a la Comba", GymConstants.MUSCLE_FULL_BODY, GymConstants.MUSCLE_CARDIO, equipment = "Comba"),
+            ExerciseEntity("86", "Battle Ropes", GymConstants.MUSCLE_FULL_BODY, GymConstants.MUSCLE_CARDIO, equipment = "Cuerdas"),
+            ExerciseEntity("87", "Remo en Máquina (Ergómetro)", GymConstants.MUSCLE_FULL_BODY, GymConstants.MUSCLE_CARDIO, equipment = GymConstants.EQ_MAQUINA),
         )
     }
 

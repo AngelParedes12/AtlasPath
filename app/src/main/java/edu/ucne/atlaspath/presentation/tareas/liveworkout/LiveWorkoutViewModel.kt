@@ -173,9 +173,9 @@ class LiveWorkoutViewModel @Inject constructor(
             )
 
             when (saveSesionUseCase(nuevaSesion)) {
-                is Resource.Success -> _state.update { it.copy(entrenamientoFinalizado = true) }
-                is Resource.Error -> _state.update { it.copy(entrenamientoFinalizado = true) }
-                is Resource.Loading -> {}
+                is Resource.Success -> _state.update { it.copy(entrenamientoFinalizado = true, isLoading = false) }
+                is Resource.Error -> _state.update { it.copy(entrenamientoFinalizado = true, isLoading = false) }
+                is Resource.Loading -> _state.update { it.copy(isLoading = true) }
             }
         }
     }

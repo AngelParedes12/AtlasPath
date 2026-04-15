@@ -37,7 +37,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.atlaspath.data.remote.dto.ExerciseDto
 import edu.ucne.atlaspath.domain.model.Ejercicio
 import edu.ucne.atlaspath.presentation.tareas.navigation.LocalSnackbarHost
-import kotlinx.coroutines.launch
 
 @Composable
 fun DetailRutinaScreen(
@@ -71,219 +70,298 @@ fun DetailRutinaBodyScreen(
     onNavigateToAi: () -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-
     val resultadosFiltrados = state.searchResults.filter { apiExercise ->
         state.ejercicios.none { it.nombre.equals(apiExercise.name, ignoreCase = true) }
     }
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(if (state.titulo.isBlank()) "Forjador de Rutinas" else state.titulo, fontWeight = FontWeight.Black) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás") } },
-                actions = {
-                    if (state.titulo.isNotBlank() && state.ejercicios.isNotEmpty()) {
-                        IconButton(onClick = { shareRutinaAsText(context, state.titulo, state.ejercicios) }) {
-                            Icon(Icons.Default.Share, contentDescription = "Compartir", tint = MaterialTheme.colorScheme.primary)
-                        }
-                    }
-                }
+            DetailRutinaTopBar(
+                titulo = state.titulo,
+                ejercicios = state.ejercicios,
+                context = context,
+                onBack = onBack
             )
         },
         bottomBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.background,
-                tonalElevation = 8.dp
-            ) {
-                Box(modifier = Modifier.padding(16.dp)) {
-                    Button(
-                        onClick = { onEvent(DetailRutinaEvent.SaveRutina) },
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        enabled = state.titulo.isNotBlank() && state.ejercicios.isNotEmpty() && !state.isLoading,
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-                    ) {
-                        if (state.isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 3.dp)
-                        } else {
-                            Icon(Icons.Default.Save, contentDescription = null)
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Guardar Armería", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                        }
-                    }
-                }
-            }
+            DetailRutinaBottomBar(
+                titulo = state.titulo,
+                ejercicios = state.ejercicios,
+                isLoading = state.isLoading,
+                onSave = { onEvent(DetailRutinaEvent.SaveRutina) }
+            )
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             contentPadding = PaddingValues(bottom = 80.dp)
         ) {
             item {
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = state.titulo,
-                    onValueChange = { onEvent(DetailRutinaEvent.OnTituloChange(it)) },
-                    placeholder = { Text("Nombre de la Rutina (Ej. Día de Piernas)", fontWeight = FontWeight.Medium) },
-                    isError = state.tituloError != null,
-                    supportingText = { if (state.tituloError != null) Text(state.tituloError!!, fontWeight = FontWeight.Bold) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    singleLine = true,
-                    textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                        focusedContainerColor = MaterialTheme.colorScheme.surface,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                    )
-                )
+                TitleInputSection(state = state, onEvent = onEvent)
             }
 
             item {
-                Button(
-                    onClick = onNavigateToAi,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-                    ),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-                ) {
-                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text("Forjar con Inteligencia Artificial ✨", fontWeight = FontWeight.Black)
-                }
+                AiButtonSection(onNavigateToAi = onNavigateToAi)
             }
 
             item {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Añadir Ejercicios", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.height(12.dp))
-
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = { onEvent(DetailRutinaEvent.OnSearchQueryChange(it)) },
-                    placeholder = { Text("Buscar ejercicio o músculo...") },
-                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
-                    trailingIcon = { if (state.isSearching) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    singleLine = true,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
-                    )
-                )
+                SearchSection(state = state, onEvent = onEvent)
             }
 
             if (state.searchQuery.isBlank() && resultadosFiltrados.isEmpty()) {
                 item {
-                    Text("Sugerencias Rápidas", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    FlowRow(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        val populares = listOf(
-                            "Press de Banca" to "Pecho", "Sentadilla" to "Piernas",
-                            "Peso Muerto" to "Espalda", "Dominadas" to "Espalda",
-                            "Curl de Bíceps" to "Brazos", "Press Militar" to "Hombros",
-                            "Plancha" to "Core"
-                        )
-                        populares.forEach { (nombre, musculo) ->
-                            Surface(
-                                modifier = Modifier.clickable { onEvent(DetailRutinaEvent.AddEjercicioManual(nombre, musculo)) },
-                                shape = RoundedCornerShape(12.dp),
-                                color = MaterialTheme.colorScheme.secondaryContainer,
-                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
-                            ) {
-                                Text("+ $nombre", modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
-                            }
-                        }
-                    }
+                    QuickSuggestionsView(onEvent = onEvent)
                 }
             }
 
             if (resultadosFiltrados.isNotEmpty()) {
                 item {
-                    ElevatedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-                        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
-                    ) {
-                        Column {
-                            resultadosFiltrados.forEachIndexed { index, localExercise ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().clickable {
-                                        onEvent(DetailRutinaEvent.AddEjercicio(exerciseDto = localExercise, series = 4, reps = 10, descanso = 60))
-                                    }.padding(16.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween
-                                ) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        Text(localExercise.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
-                                        Spacer(modifier = Modifier.height(2.dp))
-                                        Text("Músculo: ${localExercise.target}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    }
-                                    Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
-                                        Icon(Icons.Default.Add, contentDescription = "Añadir", tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
-                                    }
-                                }
-                                if (index < resultadosFiltrados.lastIndex) {
-                                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                                }
-                            }
-                        }
-                    }
+                    SearchResultsCard(resultados = resultadosFiltrados, onEvent = onEvent)
                 }
             }
 
             if (state.ejercicios.isNotEmpty()) {
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Tu Selección", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+                    Text(
+                        text = "Tu Selección",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Black
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 itemsIndexed(state.ejercicios) { index, ejercicio ->
-                    OutlinedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp).fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(ejercicio.nombre, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    "${ejercicio.grupoMuscular} • ${ejercicio.series} x ${ejercicio.repeticiones} reps",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            IconButton(onClick = { onEvent(DetailRutinaEvent.RemoveEjercicio(index)) }) {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f))
-                            }
-                        }
+                    SelectedExerciseCard(ejercicio = ejercicio, index = index, onEvent = onEvent)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DetailRutinaTopBar(
+    titulo: String,
+    ejercicios: List<Ejercicio>,
+    context: Context,
+    onBack: () -> Unit
+) {
+    CenterAlignedTopAppBar(
+        title = { Text(if (titulo.isBlank()) "Forjador de Rutinas" else titulo, fontWeight = FontWeight.Black) },
+        navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Atrás") } },
+        actions = {
+            if (titulo.isNotBlank() && ejercicios.isNotEmpty()) {
+                IconButton(onClick = { shareRutinaAsText(context, titulo, ejercicios) }) {
+                    Icon(Icons.Default.Share, contentDescription = "Compartir", tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+    )
+}
+
+@Composable
+fun DetailRutinaBottomBar(
+    titulo: String,
+    ejercicios: List<Ejercicio>,
+    isLoading: Boolean,
+    onSave: () -> Unit
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.background,
+        tonalElevation = 8.dp
+    ) {
+        Box(modifier = Modifier.padding(16.dp)) {
+            Button(
+                onClick = onSave,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                enabled = titulo.isNotBlank() && ejercicios.isNotEmpty() && !isLoading,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 3.dp)
+                } else {
+                    Icon(Icons.Default.Save, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Guardar Armería", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TitleInputSection(state: DetailRutinaUiState, onEvent: (DetailRutinaEvent) -> Unit) {
+    OutlinedTextField(
+        value = state.titulo,
+        onValueChange = { onEvent(DetailRutinaEvent.OnTituloChange(it)) },
+        placeholder = { Text("Nombre de la Rutina (Ej. Día de Piernas)", fontWeight = FontWeight.Medium) },
+        isError = state.tituloError != null,
+        supportingText = { if (state.tituloError != null) Text(state.tituloError, fontWeight = FontWeight.Bold) },
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        singleLine = true,
+        textStyle = LocalTextStyle.current.copy(fontWeight = FontWeight.Bold, fontSize = 18.sp),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            focusedContainerColor = MaterialTheme.colorScheme.surface,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+        )
+    )
+}
+
+@Composable
+fun AiButtonSection(onNavigateToAi: () -> Unit) {
+    Button(
+        onClick = onNavigateToAi,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+    ) {
+        Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text("Forjar con Inteligencia Artificial ✨", fontWeight = FontWeight.Black)
+    }
+}
+
+@Composable
+fun SearchSection(state: DetailRutinaUiState, onEvent: (DetailRutinaEvent) -> Unit) {
+    Column {
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        Spacer(modifier = Modifier.height(16.dp))
+        Text("Añadir Ejercicios", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = state.searchQuery,
+            onValueChange = { onEvent(DetailRutinaEvent.OnSearchQueryChange(it)) },
+            placeholder = { Text("Buscar ejercicio o músculo...") },
+            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+            trailingIcon = { if (state.isSearching) CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.primary) },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
+            )
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun QuickSuggestionsView(onEvent: (DetailRutinaEvent) -> Unit) {
+    Column {
+        Text("Sugerencias Rápidas", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Spacer(modifier = Modifier.height(8.dp))
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            val populares = listOf(
+                "Press de Banca" to "Pecho", "Sentadilla" to "Piernas",
+                "Peso Muerto" to "Espalda", "Dominadas" to "Espalda",
+                "Curl de Bíceps" to "Brazos", "Press Militar" to "Hombros",
+                "Plancha" to "Core"
+            )
+            populares.forEach { (nombre, musculo) ->
+                Surface(
+                    modifier = Modifier.clickable { onEvent(DetailRutinaEvent.AddEjercicioManual(nombre, musculo)) },
+                    shape = RoundedCornerShape(12.dp),
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f))
+                ) {
+                    Text("+ $nombre", modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SearchResultsCard(resultados: List<ExerciseDto>, onEvent: (DetailRutinaEvent) -> Unit) {
+    ElevatedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column {
+            resultados.forEachIndexed { index, localExercise ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onEvent(DetailRutinaEvent.AddEjercicio(exerciseDto = localExercise, series = 4, reps = 10, descanso = 60)) }
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(localExercise.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text("Músculo: ${localExercise.target}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Box(modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Default.Add, contentDescription = "Añadir", tint = MaterialTheme.colorScheme.onPrimaryContainer, modifier = Modifier.size(20.dp))
                     }
                 }
+                if (index < resultados.lastIndex) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SelectedExerciseCard(ejercicio: Ejercicio, index: Int, onEvent: (DetailRutinaEvent) -> Unit) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(16.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(modifier = Modifier.size(48.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+                Icon(Icons.Default.FitnessCenter, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(ejercicio.nombre, fontWeight = FontWeight.Black, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "${ejercicio.grupoMuscular} • ${ejercicio.series} x ${ejercicio.repeticiones} reps",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            IconButton(onClick = { onEvent(DetailRutinaEvent.RemoveEjercicio(index)) }) {
+                Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f))
             }
         }
     }

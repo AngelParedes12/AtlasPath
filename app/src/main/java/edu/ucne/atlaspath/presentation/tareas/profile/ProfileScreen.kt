@@ -36,7 +36,6 @@ import androidx.compose.ui.unit.sp
 import edu.ucne.atlaspath.presentation.tareas.navigation.LocalSnackbarHost
 import kotlinx.coroutines.launch
 
-// Estado temporal para UI (Conectar con tu ProfileViewModel si lo creas)
 data class ProfileUiState(
     val nombre: String = "Angel Paredes",
     val nivel: Int = 5,
@@ -46,16 +45,13 @@ data class ProfileUiState(
 @Composable
 fun ProfileScreen(
     onNavigateToEditProfile: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit
 ) {
-    // val state by viewModel.state.collectAsStateWithLifecycle()
     val state by remember { mutableStateOf(ProfileUiState()) }
 
     ProfileBodyScreen(
         state = state,
         onNavigateToEditProfile = onNavigateToEditProfile,
-        onNavigateToSettings = onNavigateToSettings,
         onLogout = onLogout
     )
 }
@@ -65,7 +61,6 @@ fun ProfileScreen(
 fun ProfileBodyScreen(
     state: ProfileUiState,
     onNavigateToEditProfile: () -> Unit,
-    onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit
 ) {
     val scrollState = rememberScrollState()
@@ -240,7 +235,6 @@ fun ProfileScreenPreview() {
                 ProfileBodyScreen(
                     state = ProfileUiState(),
                     onNavigateToEditProfile = {},
-                    onNavigateToSettings = {},
                     onLogout = {}
                 )
             }

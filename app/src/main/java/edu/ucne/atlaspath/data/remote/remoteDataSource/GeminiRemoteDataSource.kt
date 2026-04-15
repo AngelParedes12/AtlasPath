@@ -14,6 +14,13 @@ class GeminiRemoteDataSource @Inject constructor(
 ) {
     private val apiKey = BuildConfig.GEMINI_API_KEY
 
+    companion object {
+        private const val JSON_PREFIX = "```json"
+        private const val JSON_SUFFIX = "```"
+        private const val ERROR_EMPTY_RESPONSE = "La IA devolvió una respuesta vacía"
+        private const val ERROR_UNKNOWN = "Error desconocido"
+    }
+
     suspend fun generateWorkout(userPrompt: String): Result<Rutina> {
         return try {
             val systemInstruction = """
@@ -41,17 +48,17 @@ class GeminiRemoteDataSource @Inject constructor(
             if (response.isSuccessful) {
                 val jsonText = response.body()?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
                 if (jsonText != null) {
-                    val cleanJson = jsonText.replace("```json", "").replace("```", "").trim()
+                    val cleanJson = jsonText.replace(JSON_PREFIX, "").replace(JSON_SUFFIX, "").trim()
                     val adapter = moshi.adapter(RoutineDto::class.java)
                     val routineDto = adapter.fromJson(cleanJson)
 
                     if (routineDto != null) Result.success(routineDto.toDomain())
                     else Result.failure(Exception("Error al parsear la rutina de la IA"))
                 } else {
-                    Result.failure(Exception("La IA devolvió una respuesta vacía"))
+                    Result.failure(Exception(ERROR_EMPTY_RESPONSE))
                 }
             } else {
-                val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                val errorBody = response.errorBody()?.string() ?: ERROR_UNKNOWN
                 Result.failure(Exception("HTTP ${response.code()}: $errorBody"))
             }
         } catch (e: Exception) {
@@ -82,17 +89,17 @@ class GeminiRemoteDataSource @Inject constructor(
                 val jsonText = response.body()?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
 
                 if (jsonText != null) {
-                    val cleanJson = jsonText.replace("```json", "").replace("```", "").trim()
+                    val cleanJson = jsonText.replace(JSON_PREFIX, "").replace(JSON_SUFFIX, "").trim()
                     val adapter = moshi.adapter(FoodAnalysisDto::class.java)
                     val foodDto = adapter.fromJson(cleanJson)
 
                     if (foodDto != null) Result.success(foodDto.toDomain())
                     else Result.failure(Exception("Error al parsear el alimento de la IA"))
                 } else {
-                    Result.failure(Exception("La IA devolvió una respuesta vacía"))
+                    Result.failure(Exception(ERROR_EMPTY_RESPONSE))
                 }
             } else {
-                val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                val errorBody = response.errorBody()?.string() ?: ERROR_UNKNOWN
                 Result.failure(Exception("HTTP ${response.code()}: $errorBody"))
             }
         } catch (e: Exception) {
@@ -124,17 +131,17 @@ class GeminiRemoteDataSource @Inject constructor(
                 val jsonText = response.body()?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
 
                 if (jsonText != null) {
-                    val cleanJson = jsonText.replace("```json", "").replace("```", "").trim()
+                    val cleanJson = jsonText.replace(JSON_PREFIX, "").replace(JSON_SUFFIX, "").trim()
                     val adapter = moshi.adapter(RecipeDto::class.java)
                     val recipeDto = adapter.fromJson(cleanJson)
 
                     if (recipeDto != null) Result.success(recipeDto)
                     else Result.failure(Exception("Error al parsear la receta de la IA"))
                 } else {
-                    Result.failure(Exception("La IA devolvió una respuesta vacía"))
+                    Result.failure(Exception(ERROR_EMPTY_RESPONSE))
                 }
             } else {
-                val errorBody = response.errorBody()?.string() ?: "Error desconocido"
+                val errorBody = response.errorBody()?.string() ?: ERROR_UNKNOWN
                 Result.failure(Exception("HTTP ${response.code()}: $errorBody"))
             }
         } catch (e: Exception) {

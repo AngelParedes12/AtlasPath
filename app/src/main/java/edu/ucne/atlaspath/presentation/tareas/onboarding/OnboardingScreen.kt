@@ -40,9 +40,7 @@ fun OnboardingScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(state.success) {
-        if (state.success) {
-            onFinish()
-        }
+        if (state.success) onFinish()
     }
 
     OnboardingBodyScreen(
@@ -51,7 +49,6 @@ fun OnboardingScreen(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun OnboardingBodyScreen(
     state: OnboardingUiState,
@@ -73,27 +70,7 @@ fun OnboardingBodyScreen(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
-        Box(
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface)
-                .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
-                .padding(12.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "Logo AtlasPath",
-                modifier = Modifier.fillMaxSize()
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Text("ATLASPATH", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, letterSpacing = 6.sp, color = MaterialTheme.colorScheme.primary)
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Forja tu leyenda.\nTransforma tu cuerpo.", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        OnboardingHeader()
 
         Spacer(modifier = Modifier.height(40.dp))
 
@@ -105,11 +82,7 @@ fun OnboardingBodyScreen(
             singleLine = true,
             shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth(),
-            textStyle = LocalTextStyle.current.copy(
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            ),
+            textStyle = LocalTextStyle.current.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,
                 unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
@@ -120,73 +93,25 @@ fun OnboardingBodyScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Text("Tu Nivel de Experiencia", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Start), color = MaterialTheme.colorScheme.onSurface)
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            val niveles = listOf("Principiante", "Intermedio", "Avanzado")
-            niveles.forEach { nivelStr ->
-                val isSelected = state.nivel == nivelStr
-                val containerColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant, label = "color")
-                val contentColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant, label = "contentColor")
-                val elevation by animateDpAsState(if (isSelected) 4.dp else 0.dp, label = "elevation")
-
-                Surface(
-                    modifier = Modifier.clickable { onEvent(OnboardingEvent.OnNivelChange(nivelStr)) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = containerColor,
-                    shadowElevation = elevation,
-                    border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    Text(
-                        text = nivelStr,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
-                    )
-                }
-            }
-        }
+        OnboardingSelectionRow(
+            title = "Tu Nivel de Experiencia",
+            options = listOf("Principiante", "Intermedio", "Avanzado"),
+            selected = state.nivel,
+            onSelect = { onEvent(OnboardingEvent.OnNivelChange(it)) },
+            colorTheme = MaterialTheme.colorScheme.primary,
+            onColorTheme = MaterialTheme.colorScheme.onPrimary
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Text("Tu Objetivo Principal", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Start), color = MaterialTheme.colorScheme.onSurface)
-        Spacer(modifier = Modifier.height(12.dp))
-
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            val objetivos = listOf("Hipertrofia", "Fuerza", "Resistencia", "Pérdida de Peso")
-            objetivos.forEach { objStr ->
-                val isSelected = state.objetivo == objStr
-                val containerColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.surfaceVariant, label = "color")
-                val contentColor by animateColorAsState(if (isSelected) MaterialTheme.colorScheme.onTertiary else MaterialTheme.colorScheme.onSurfaceVariant, label = "contentColor")
-                val elevation by animateDpAsState(if (isSelected) 4.dp else 0.dp, label = "elevation")
-
-                Surface(
-                    modifier = Modifier.clickable { onEvent(OnboardingEvent.OnObjetivoChange(objStr)) },
-                    shape = RoundedCornerShape(16.dp),
-                    color = containerColor,
-                    shadowElevation = elevation,
-                    border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    Text(
-                        text = objStr,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
-                    )
-                }
-            }
-        }
+        OnboardingSelectionRow(
+            title = "Tu Objetivo Principal",
+            options = listOf("Hipertrofia", "Fuerza", "Resistencia", "Pérdida de Peso"),
+            selected = state.objetivo,
+            onSelect = { onEvent(OnboardingEvent.OnObjetivoChange(it)) },
+            colorTheme = MaterialTheme.colorScheme.tertiary,
+            onColorTheme = MaterialTheme.colorScheme.onTertiary
+        )
 
         state.error?.let {
             Spacer(modifier = Modifier.height(16.dp))
@@ -227,17 +152,74 @@ fun OnboardingBodyScreen(
     }
 }
 
+@Composable
+fun OnboardingHeader() {
+    Box(
+        modifier = Modifier
+            .size(120.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .border(2.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f), CircleShape)
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(painter = painterResource(id = R.drawable.logo), contentDescription = "Logo", modifier = Modifier.fillMaxSize())
+    }
+    Spacer(modifier = Modifier.height(24.dp))
+    Text("ATLASPATH", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Black, letterSpacing = 6.sp, color = MaterialTheme.colorScheme.primary)
+    Spacer(modifier = Modifier.height(8.dp))
+    Text("Forja tu leyenda.\nTransforma tu cuerpo.", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onSurfaceVariant)
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun OnboardingSelectionRow(
+    title: String,
+    options: List<String>,
+    selected: String,
+    onSelect: (String) -> Unit,
+    colorTheme: Color,
+    onColorTheme: Color
+) {
+    Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurface)
+    Spacer(modifier = Modifier.height(12.dp))
+    FlowRow(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        options.forEach { opt ->
+            val isSelected = selected == opt
+            val containerColor by animateColorAsState(if (isSelected) colorTheme else MaterialTheme.colorScheme.surfaceVariant, label = "color")
+            val contentColor by animateColorAsState(if (isSelected) onColorTheme else MaterialTheme.colorScheme.onSurfaceVariant, label = "contentColor")
+            val elevation by animateDpAsState(if (isSelected) 4.dp else 0.dp, label = "elevation")
+
+            Surface(
+                modifier = Modifier.clickable { onSelect(opt) },
+                shape = RoundedCornerShape(16.dp),
+                color = containerColor,
+                shadowElevation = elevation,
+                border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant)
+            ) {
+                Text(
+                    text = opt,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor
+                )
+            }
+        }
+    }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun OnboardingPreview() {
     MaterialTheme {
         Surface {
             OnboardingBodyScreen(
-                state = OnboardingUiState(
-                    nombre = "",
-                    nivel = "Principiante",
-                    objetivo = "Hipertrofia"
-                ),
+                state = OnboardingUiState(),
                 onEvent = {}
             )
         }

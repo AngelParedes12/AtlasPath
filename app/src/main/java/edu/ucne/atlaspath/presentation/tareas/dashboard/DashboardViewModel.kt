@@ -49,6 +49,7 @@ class DashboardViewModel @Inject constructor(
             is DashboardEvent.UpdateName -> {
                 viewModelScope.launch {
                     _state.update { it.copy(userName = event.nuevoNombre) }
+                    userPreferences.saveUserName(event.nuevoNombre)
                 }
             }
         }
@@ -86,51 +87,66 @@ class DashboardViewModel @Inject constructor(
     private fun loadStats() {
         viewModelScope.launch {
             getDashboardStatsUseCase().collect { result ->
-                if (result is Resource.Success) {
-                    val stats = result.data
-                    if (stats != null) {
-                        _state.update {
-                            it.copy(
-                                rachaDias = stats.rachaDias,
-                                totalEntrenamientos = stats.totalEntrenamientos,
-                                volumenTotalLbs = stats.volumenTotalLbs,
-                                nivelActual = stats.nivelActual,
-                                progresoNivel = stats.progresoNivel,
-                                rangosMusculares = stats.rangosMusculares
-                            )
+                when (result) {
+                    is Resource.Success -> {
+                        result.data?.let { stats ->
+                            _state.update {
+                                it.copy(
+                                    rachaDias = stats.rachaDias,
+                                    totalEntrenamientos = stats.totalEntrenamientos,
+                                    volumenTotalLbs = stats.volumenTotalLbs,
+                                    nivelActual = stats.nivelActual,
+                                    progresoNivel = stats.progresoNivel,
+                                    rangosMusculares = stats.rangosMusculares
+                                )
+                            }
                         }
                     }
+                    is Resource.Error -> _state.update { it }
+                    is Resource.Loading -> _state.update { it }
                 }
             }
         }
     }
+
     private fun loadWeeklyCalendar() {
         viewModelScope.launch {
             getSesionesUseCase().collect { result ->
-                if (result is Resource.Success) {
-                    val sesiones = result.data ?: emptyList()
-                    val booleanList = MutableList(7) { false }
+                when (result) {
+                    is Resource.Success -> {
+                        val sesiones = result.data ?: emptyList()
+                        val booleanList = MutableList(7) { false }
+                        val startOfWeek = getStartOfWeekMillis()
 
-                    val cal = Calendar.getInstance()
-                    cal.firstDayOfWeek = Calendar.MONDAY
-                    cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
-                    cal.set(Calendar.HOUR_OF_DAY, 0)
-                    cal.set(Calendar.MINUTE, 0)
-                    cal.set(Calendar.SECOND, 0)
-                    val startOfWeek = cal.timeInMillis
-                    sesiones.forEach { sesion ->
-                        if (sesion.fechaInicio >= startOfWeek) {
-                            val sessionCal = Calendar.getInstance().apply { timeInMillis = sesion.fechaInicio }
-                            val dayOfWeek = sessionCal.get(Calendar.DAY_OF_WEEK)
-                            val index = if (dayOfWeek == Calendar.SUNDAY) 6 else dayOfWeek - 2
+                        sesiones.filter { it.fechaInicio >= startOfWeek }.forEach { sesion ->
+                            val index = getDayOfWeekIndex(sesion.fechaInicio)
                             if (index in 0..6) {
                                 booleanList[index] = true
                             }
                         }
+                        _state.update { it.copy(diasEntrenadosSemana = booleanList) }
                     }
-                    _state.update { it.copy(diasEntrenadosSemana = booleanList) }
+                    is Resource.Error -> _state.update { it }
+                    is Resource.Loading -> _state.update { it }
                 }
             }
         }
+    }
+
+    private fun getStartOfWeekMillis(): Long {
+        val cal = Calendar.getInstance()
+        cal.firstDayOfWeek = Calendar.MONDAY
+        cal.set(Calendar.DAY_OF_WEEK, Calendar.MONDAY)
+        cal.set(Calendar.HOUR_OF_DAY, 0)
+        cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0)
+        cal.set(Calendar.MILLISECOND, 0)
+        return cal.timeInMillis
+    }
+
+    private fun getDayOfWeekIndex(timestamp: Long): Int {
+        val cal = Calendar.getInstance().apply { timeInMillis = timestamp }
+        val dayOfWeek = cal.get(Calendar.DAY_OF_WEEK)
+        return if (dayOfWeek == Calendar.SUNDAY) 6 else dayOfWeek - 2
     }
 }

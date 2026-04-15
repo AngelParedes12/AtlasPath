@@ -16,7 +16,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,67 +29,38 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import edu.ucne.atlaspath.data.local.datastore.UserPreferences
-import kotlinx.coroutines.launch
-import javax.inject.Inject
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlin.math.roundToInt
+
+@Composable
+fun PhysicalProfileScreen(
+    viewModel: PhysicalProfileViewModel = hiltViewModel(),
+    onBack: () -> Unit,
+    onProfileSaved: () -> Unit
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+
+    PhysicalProfileBodyScreen(
+        state = state,
+        onEvent = viewModel::onEvent,
+        onBack = onBack,
+        onProfileSaved = onProfileSaved
+    )
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PhysicalProfileScreen(
+fun PhysicalProfileBodyScreen(
+    state: PhysicalProfileUiState,
+    onEvent: (PhysicalProfileEvent) -> Unit,
     onBack: () -> Unit,
-    onProfileSaved: (Int, Float, Float, String, String, String, String) -> Unit
+    onProfileSaved: () -> Unit
 ) {
     val scrollState = rememberScrollState()
-    var showValidationError by remember { mutableStateOf(false) }
-    var age by remember { mutableFloatStateOf(25f) }
-    var isKg by remember { mutableStateOf(true) }
-    var weightValue by remember { mutableFloatStateOf(70f) }
-    var isCm by remember { mutableStateOf(true) }
-    var heightValue by remember { mutableFloatStateOf(170f) }
-    var selectedGender by remember { mutableStateOf("") }
-    var selectedLevel by remember { mutableStateOf("") }
-    var selectedSomatotype by remember { mutableStateOf("") }
-    var selectedGoal by remember { mutableStateOf("") }
-    var showSomatotypeHelp by remember { mutableStateOf(false) }
 
-    if (showSomatotypeHelp) {
-        AlertDialog(
-            onDismissRequest = { showSomatotypeHelp = false },
-            shape = RoundedCornerShape(24.dp),
-            title = { Text("Tipos de Cuerpo", fontWeight = FontWeight.Black) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Row {
-                        Text("💪", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
-                        Column {
-                            Text("Ectomorfo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text("Estructura delgada, extremidades largas. Dificultad para ganar peso.", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                    Row {
-                        Text("🏋️", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
-                        Column {
-                            Text("Mesomorfo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text("Estructura atlética natural. Facilidad para ganar músculo.", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                    Row {
-                        Text("🐻", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp))
-                        Column {
-                            Text("Endomorfo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                            Text("Estructura ancha, metabolismo lento. Facilidad para ganar volumen.", style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(onClick = { showSomatotypeHelp = false }, shape = RoundedCornerShape(12.dp)) { Text("Entendido", fontWeight = FontWeight.Bold) }
-            }
-        )
+    if (state.showSomatotypeHelp) {
+        SomatotypeHelpDialog(onDismiss = { onEvent(PhysicalProfileEvent.ToggleHelp(false)) })
     }
 
     Scaffold(
@@ -96,10 +71,8 @@ fun PhysicalProfileScreen(
             )
         },
         bottomBar = {
-            Column(
-                modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(16.dp)
-            ) {
-                AnimatedVisibility(visible = showValidationError) {
+            Column(modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(16.dp)) {
+                AnimatedVisibility(visible = state.showValidationError) {
                     Surface(
                         color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
                         shape = RoundedCornerShape(12.dp),
@@ -118,14 +91,7 @@ fun PhysicalProfileScreen(
                 }
 
                 Button(
-                    onClick = {
-                        val valid = selectedGender.isNotBlank() && selectedLevel.isNotBlank() && selectedSomatotype.isNotBlank() && selectedGoal.isNotBlank()
-                        if (valid) {
-                            val finalWeight = if (isKg) weightValue * 2.20462f else weightValue
-                            val finalHeight = if (!isCm) heightValue * 30.48f else heightValue
-                            onProfileSaved(age.roundToInt(), finalWeight, finalHeight, selectedSomatotype, selectedGoal, selectedLevel, selectedGender)
-                        } else { showValidationError = true }
-                    },
+                    onClick = { onEvent(PhysicalProfileEvent.SaveProfile(onProfileSaved)) },
                     modifier = Modifier.fillMaxWidth().height(60.dp),
                     shape = RoundedCornerShape(20.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
@@ -143,15 +109,9 @@ fun PhysicalProfileScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Spacer(modifier = Modifier.height(4.dp))
+            Text(text = "Ayuda a Atlas a conocerte", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
 
-            Text(
-                text = "Ayuda a Atlas a conocerte",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Black,
-                color = MaterialTheme.colorScheme.primary
-            )
-
-            ProfileDropdown("Género Biológico", selectedGender, listOf("Hombre", "Mujer", "Otro")) { selectedGender = it; showValidationError = false }
+            ProfileDropdown("Género Biológico", state.selectedGender, listOf("Hombre", "Mujer", "Otro")) { onEvent(PhysicalProfileEvent.OnGenderChange(it)) }
 
             OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
@@ -160,7 +120,7 @@ fun PhysicalProfileScreen(
                 colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    ProfileSlider("Edad", "${age.roundToInt()} años", age, 14f..90f) { age = it }
+                    ProfileSlider("Edad", "${state.age.roundToInt()} años", state.age, 14f..90f) { onEvent(PhysicalProfileEvent.OnAgeChange(it)) }
                 }
             }
 
@@ -171,47 +131,58 @@ fun PhysicalProfileScreen(
                 colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    ProfileUnitSlider("Peso Corporal", if (isKg) "kg" else "lbs", weightValue, if (isKg) 40f..160f else 90f..350f, { weightValue = it }) {
-                        isKg = !isKg
-                        weightValue = if (isKg) weightValue / 2.2f else weightValue * 2.2f
+                    ProfileUnitSlider("Peso Corporal", if (state.isKg) "kg" else "lbs", state.weightValue, if (state.isKg) 40f..160f else 90f..350f, { onEvent(PhysicalProfileEvent.OnWeightChange(it)) }) {
+                        onEvent(PhysicalProfileEvent.ToggleWeightUnit)
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    ProfileUnitSlider("Estatura", if (isCm) "cm" else "ft", heightValue, if (isCm) 140f..210f else 4.5f..7f, { heightValue = it }) {
-                        isCm = !isCm
-                        heightValue = if (isCm) heightValue * 30.48f else heightValue / 30.48f
+                    ProfileUnitSlider("Estatura", if (state.isCm) "cm" else "ft", state.heightValue, if (state.isCm) 140f..210f else 4.5f..7f, { onEvent(PhysicalProfileEvent.OnHeightChange(it)) }) {
+                        onEvent(PhysicalProfileEvent.ToggleHeightUnit)
                     }
                 }
             }
 
-            ProfileDropdown("Experiencia en Entrenamiento", selectedLevel, listOf("Principiante", "Intermedio", "Avanzado")) { selectedLevel = it; showValidationError = false }
+            ProfileDropdown("Experiencia", state.selectedLevel, listOf("Principiante", "Intermedio", "Avanzado")) { onEvent(PhysicalProfileEvent.OnLevelChange(it)) }
 
             Column {
                 Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Tipo de Cuerpo (Somatotipo)", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Text("Tipo de Cuerpo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     IconButton(
-                        onClick = { showSomatotypeHelp = true },
+                        onClick = { onEvent(PhysicalProfileEvent.ToggleHelp(true)) },
                         modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
-                    ) {
-                        Icon(Icons.Default.Info, contentDescription = "Info", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary)
-                    }
+                    ) { Icon(Icons.Default.Info, contentDescription = "Info", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary) }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                ProfileDropdown("", selectedSomatotype, listOf("Ectomorfo", "Mesomorfo", "Endomorfo")) { selectedSomatotype = it; showValidationError = false }
+                ProfileDropdown("", state.selectedSomatotype, listOf("Ectomorfo", "Mesomorfo", "Endomorfo")) { onEvent(PhysicalProfileEvent.OnSomatotypeChange(it)) }
             }
 
             Column {
-                Text("¿Cuál es tu objetivo principal?", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text("Objetivo principal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                 Spacer(modifier = Modifier.height(8.dp))
-                ProfileDropdown("", selectedGoal, listOf("Pérdida de Grasa", "Ganancia Muscular", "Recomposición", "Mantenimiento")) { selectedGoal = it; showValidationError = false }
+                ProfileDropdown("", state.selectedGoal, listOf("Pérdida de Grasa", "Ganancia Muscular", "Recomposición", "Mantenimiento")) { onEvent(PhysicalProfileEvent.OnGoalChange(it)) }
             }
 
             Spacer(modifier = Modifier.height(40.dp))
         }
     }
+}
+
+@Composable
+fun SomatotypeHelpDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
+        title = { Text("Tipos de Cuerpo", fontWeight = FontWeight.Black) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Row { Text("💪", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp)); Column { Text("Ectomorfo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary); Text("Delgado, extremidades largas. Dificultad para ganar peso.", style = MaterialTheme.typography.bodyMedium) } }
+                Row { Text("🏋️", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp)); Column { Text("Mesomorfo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary); Text("Atlético natural. Facilidad para ganar músculo.", style = MaterialTheme.typography.bodyMedium) } }
+                Row { Text("🐻", fontSize = 24.sp, modifier = Modifier.padding(end = 12.dp)); Column { Text("Endomorfo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary); Text("Ancho, metabolismo lento. Facilidad para ganar volumen.", style = MaterialTheme.typography.bodyMedium) } }
+            }
+        },
+        confirmButton = { Button(onClick = onDismiss, shape = RoundedCornerShape(12.dp)) { Text("Entendido", fontWeight = FontWeight.Bold) } }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -228,24 +199,10 @@ fun ProfileDropdown(label: String, selected: String, options: List<String>, onSe
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.menuAnchor().fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            )
+            colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = MaterialTheme.colorScheme.primary, unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant, focusedContainerColor = MaterialTheme.colorScheme.surface, unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
         )
-        ExposedDropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-        ) {
-            options.forEach { opt ->
-                DropdownMenuItem(
-                    text = { Text(opt, fontWeight = FontWeight.Medium) },
-                    onClick = { onSelect(opt); expanded = false }
-                )
-            }
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+            options.forEach { opt -> DropdownMenuItem(text = { Text(opt, fontWeight = FontWeight.Medium) }, onClick = { onSelect(opt); expanded = false }) }
         }
     }
 }
@@ -258,16 +215,7 @@ fun ProfileSlider(label: String, valueText: String, value: Float, range: ClosedF
             Text(valueText, style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = range,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        )
+        Slider(value = value, onValueChange = onValueChange, valueRange = range, colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant))
     }
 }
 
@@ -276,65 +224,27 @@ fun ProfileUnitSlider(label: String, unit: String, value: Float, range: ClosedFl
     Column {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
             Text(label, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Surface(
-                modifier = Modifier.clickable { onUnitToggle() },
-                shape = RoundedCornerShape(12.dp),
-                color = MaterialTheme.colorScheme.surfaceVariant,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
-            ) {
-                Text(
-                    text = "Cambiar a ${if (unit == "kg") "Lbs" else if (unit == "cm") "Ft" else if (unit == "lbs") "Kg" else "Cm"}",
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            Surface(modifier = Modifier.clickable { onUnitToggle() }, shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
+                Text("Cambiar a ${if (unit == "kg") "Lbs" else if (unit == "cm") "Ft" else if (unit == "lbs") "Kg" else "Cm"}", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "${if (unit == "ft") String.format("%.1f", value) else value.roundToInt()} $unit",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Black
-        )
+        Text("${if (unit == "ft") String.format("%.1f", value) else value.roundToInt()} $unit", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
         Spacer(modifier = Modifier.height(8.dp))
-        Slider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = range,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        )
+        Slider(value = value, onValueChange = onValueChange, valueRange = range, colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant))
     }
 }
 
-@HiltViewModel
-class PhysicalProfileViewModel @Inject constructor(
-    private val userPreferences: UserPreferences
-) : ViewModel() {
-    fun saveProfile(age: Int, weight: Float, height: Float, somatotype: String, goal: String, gymLevel: String, gender: String, onComplete: () -> Unit) {
-        viewModelScope.launch {
-            userPreferences.savePhysicalProfile(age, weight, height, somatotype, goal, gymLevel, gender)
-            userPreferences.saveOnboardingCompleted(true)
-            onComplete()
-        }
-    }
-}
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun PhysicalProfilePreview() {
     MaterialTheme {
-        Surface(
-            modifier = Modifier.fillMaxSize(),
-            color = MaterialTheme.colorScheme.background
-        ) {
-            PhysicalProfileScreen(
+        Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+            PhysicalProfileBodyScreen(
+                state = PhysicalProfileUiState(),
+                onEvent = {},
                 onBack = {},
-                onProfileSaved = { _, _, _, _, _, _, _ -> }
+                onProfileSaved = {}
             )
         }
     }
