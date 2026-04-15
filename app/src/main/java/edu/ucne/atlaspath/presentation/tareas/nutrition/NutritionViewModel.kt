@@ -1,13 +1,11 @@
 package edu.ucne.atlaspath.presentation.tareas.nutrition
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.navigation.toRoute
 import dagger.hilt.android.lifecycle.HiltViewModel
+import edu.ucne.atlaspath.data.local.datastore.UserPreferences
 import edu.ucne.atlaspath.data.remote.Resource
 import edu.ucne.atlaspath.domain.repository.NutritionRepository
-import edu.ucne.atlaspath.presentation.tareas.navigation.Screen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -20,20 +18,28 @@ import javax.inject.Inject
 @HiltViewModel
 class NutritionViewModel @Inject constructor(
     private val repository: NutritionRepository,
-    savedStateHandle: SavedStateHandle
+    private val userPreferences: UserPreferences
 ) : ViewModel() {
 
-    private val args = savedStateHandle.toRoute<Screen.Nutrition>()
-    private val metaCalculada = (args.pesoLbs * 14).toInt()
-
-    private val _state = MutableStateFlow(NutritionUiState(dailyCalorieGoal = metaCalculada))
+    private val _state = MutableStateFlow(NutritionUiState())
     val state = _state.asStateFlow()
 
     private val todayString: String
         get() = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
     init {
+        loadUserProfile()
         loadDailyRecords()
+    }
+
+    private fun loadUserProfile() {
+        viewModelScope.launch {
+            userPreferences.userProfileFlow.collect { profile ->
+                val weight = profile.weightLbs
+                val metaCalculada = if (weight > 0f) (weight * 14).toInt() else 2000
+                _state.update { it.copy(dailyCalorieGoal = metaCalculada) }
+            }
+        }
     }
 
     fun onEvent(event: NutritionEvent) {
@@ -74,10 +80,11 @@ class NutritionViewModel @Inject constructor(
         if (foodText.isBlank()) return
 
         viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, error = null) }
             when (val result = repository.analyzeAndSaveFood(foodText)) {
-                is Resource.Success -> _state.update { it.copy(isSaving = false, foodInputText = "") }
+                is Resource.Success -> _state.update { it.copy(isSaving = false, foodInputText = "", isSaved = true) }
                 is Resource.Error -> _state.update { it.copy(isSaving = false, error = result.message) }
-                is Resource.Loading -> _state.update { it.copy(isSaving = true, error = null) }
+                is Resource.Loading -> { }
             }
         }
     }
@@ -91,10 +98,11 @@ class NutritionViewModel @Inject constructor(
         if (recipeText.isBlank()) return
 
         viewModelScope.launch {
+            _state.update { it.copy(isGeneratingRecipe = true, error = null) }
             when (val result = repository.generateRecipe(recipeText)) {
                 is Resource.Success -> _state.update { it.copy(isGeneratingRecipe = false, generatedRecipe = result.data) }
                 is Resource.Error -> _state.update { it.copy(isGeneratingRecipe = false, error = result.message) }
-                is Resource.Loading -> _state.update { it.copy(isGeneratingRecipe = true, error = null) }
+                is Resource.Loading -> { }
             }
         }
     }

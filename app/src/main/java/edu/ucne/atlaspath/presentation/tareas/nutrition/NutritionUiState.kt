@@ -16,5 +16,6 @@ data class NutritionUiState(
     val dailyCalorieGoal: Int = 2500,
     val recipeInputText: String = "",
     val isGeneratingRecipe: Boolean = false,
-    val generatedRecipe: RecipeDto? = null
+    val generatedRecipe: RecipeDto? = null,
+    val isSaved: Boolean = false
 )

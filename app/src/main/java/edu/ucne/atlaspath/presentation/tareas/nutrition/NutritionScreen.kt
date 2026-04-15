@@ -3,7 +3,8 @@
 
 package edu.ucne.atlaspath.presentation.tareas.nutrition
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,16 +22,11 @@ import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -42,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.atlaspath.data.remote.dto.RecipeDto
 import edu.ucne.atlaspath.domain.model.RegistroNutricional
 import edu.ucne.atlaspath.presentation.tareas.navigation.LocalSnackbarHost
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
@@ -72,83 +69,185 @@ fun NutritionBodyScreen(
 
     Scaffold(
         topBar = {
-            NutritionTopBar(
-                selectedTabIndex = selectedTabIndex,
-                tabs = tabs,
-                onTabSelected = { selectedTabIndex = it },
-                onBack = onBack
-            )
+            if (!state.isSaving && !state.isGeneratingRecipe) {
+                NutritionTopBar(
+                    selectedTabIndex = selectedTabIndex,
+                    tabs = tabs,
+                    onTabSelected = { selectedTabIndex = it },
+                    onBack = onBack
+                )
+            }
         }
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+        AnimatedContent(
+            targetState = when {
+                state.isSaving -> 1
+                state.isGeneratingRecipe -> 2
+                else -> 0
+            },
+            label = "NutritionStateTransition",
+            transitionSpec = { fadeIn(tween(500)) togetherWith fadeOut(tween(500)) }
+        ) { targetState ->
+            when (targetState) {
+                1 -> LoadingOverlayView(tipo = "Macros")
+                2 -> LoadingOverlayView(tipo = "Receta")
+                0 -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(padding)
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp)
+                    ) {
+                        item { Spacer(modifier = Modifier.height(8.dp)) }
 
-            if (selectedTabIndex == 0) {
-                item {
-                    MacrosDashboard(
-                        calories = state.totalCalories,
-                        protein = state.totalProtein,
-                        carbs = state.totalCarbs,
-                        fat = state.totalFat
-                    )
-                }
-
-                if (state.dailyCalorieGoal > 0 && state.totalCalories >= state.dailyCalorieGoal) {
-                    item {
-                        CalorieWarningCard(
-                            caloriasActuales = state.totalCalories,
-                            meta = state.dailyCalorieGoal
-                        )
-                    }
-                }
-
-                item {
-                    FoodInputSection(state = state, onEvent = onEvent)
-                }
-
-                item {
-                    DailyRecordsHeader()
-                }
-
-                if (state.dailyRecords.isEmpty() && !state.isLoading) {
-                    item {
-                        EmptyDailyRecordsCard()
-                    }
-                } else {
-                    items(state.dailyRecords) { record ->
-                        FoodRecordItem(
-                            record = record,
-                            onDelete = {
-                                onEvent(NutritionEvent.DeleteRecord(record.id))
-                                scope.launch { snackbarHost.showSnackbar("🗑️ Registro de comida eliminado") }
+                        if (selectedTabIndex == 0) {
+                            item {
+                                MacrosDashboard(
+                                    calories = state.totalCalories,
+                                    goal = state.dailyCalorieGoal,
+                                    protein = state.totalProtein,
+                                    carbs = state.totalCarbs,
+                                    fat = state.totalFat
+                                )
                             }
-                        )
-                    }
-                }
-            } else {
-                item {
-                    RecipeInputSection(state = state, onEvent = onEvent)
-                }
 
-                if (state.generatedRecipe == null && !state.isGeneratingRecipe) {
-                    item {
-                        EmptyRecipeCard()
-                    }
-                } else if (state.generatedRecipe != null) {
-                    item {
-                        RecipeCard(recipe = state.generatedRecipe)
+                            if (state.dailyCalorieGoal > 0 && state.totalCalories >= state.dailyCalorieGoal) {
+                                item {
+                                    CalorieWarningCard(
+                                        caloriasActuales = state.totalCalories,
+                                        meta = state.dailyCalorieGoal
+                                    )
+                                }
+                            }
+
+                            item {
+                                FoodInputSection(state = state, onEvent = onEvent)
+                            }
+
+                            item {
+                                DailyRecordsHeader()
+                            }
+
+                            if (state.dailyRecords.isEmpty() && !state.isLoading) {
+                                item {
+                                    EmptyDailyRecordsCard()
+                                }
+                            } else {
+                                items(state.dailyRecords) { record ->
+                                    FoodRecordItem(
+                                        record = record,
+                                        onDelete = {
+                                            onEvent(NutritionEvent.DeleteRecord(record.id))
+                                            scope.launch { snackbarHost.showSnackbar("🗑️ Registro de comida eliminado") }
+                                        }
+                                    )
+                                }
+                            }
+                        } else {
+                            item {
+                                RecipeInputSection(state = state, onEvent = onEvent)
+                            }
+
+                            if (state.generatedRecipe == null) {
+                                item {
+                                    EmptyRecipeCard()
+                                }
+                            } else {
+                                item {
+                                    RecipeCard(recipe = state.generatedRecipe!!)
+                                }
+                            }
+                        }
+
+                        item { Spacer(modifier = Modifier.height(32.dp)) }
                     }
                 }
             }
-
-            item { Spacer(modifier = Modifier.height(32.dp)) }
         }
+    }
+}
+
+@Composable
+fun LoadingOverlayView(tipo: String) {
+    val frasesMacros = listOf(
+        "Escaneando ingredientes...",
+        "Calculando impacto metabólico...",
+        "Midiendo gramos de proteína...",
+        "Ajustando calorías consumidas...",
+        "Actualizando tu progreso de hoy..."
+    )
+
+    val frasesReceta = listOf(
+        "Afilando cuchillos digitales...",
+        "Buscando recetas altas en proteína...",
+        "Combinando sabores e ingredientes...",
+        "Calculando tiempos de cocción...",
+        "Sirviendo el plato perfecto..."
+    )
+
+    val frasesActivas = if (tipo == "Macros") frasesMacros else frasesReceta
+
+    var fraseIndex by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2500)
+            fraseIndex = (fraseIndex + 1) % frasesActivas.size
+        }
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.15f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "iconPulse"
+    )
+
+    val colorPrincipal = if (tipo == "Macros") MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+    val colorContainer = if (tipo == "Macros") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+    val icon = if (tipo == "Macros") Icons.Default.Restaurant else Icons.Default.LocalDining
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .scale(scale)
+                .clip(CircleShape)
+                .background(colorContainer.copy(alpha = 0.5f))
+                .border(4.dp, colorPrincipal.copy(alpha = 0.3f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, contentDescription = null, modifier = Modifier.size(60.dp), tint = colorPrincipal)
+        }
+        Spacer(modifier = Modifier.height(40.dp))
+        AnimatedContent(targetState = frasesActivas[fraseIndex], label = "textoCarga") { frase ->
+            Text(
+                text = frase,
+                style = MaterialTheme.typography.titleMedium,
+                color = colorPrincipal,
+                fontWeight = FontWeight.ExtraBold,
+                textAlign = TextAlign.Center
+            )
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth(0.7f)
+                .height(8.dp)
+                .clip(CircleShape),
+            color = colorPrincipal,
+            trackColor = MaterialTheme.colorScheme.surfaceVariant
+        )
     }
 }
 
@@ -223,19 +322,13 @@ fun FoodInputSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            enabled = state.foodInputText.isNotBlank() && !state.isSaving,
+            enabled = state.foodInputText.isNotBlank(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(16.dp)
         ) {
-            if (state.isSaving) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onPrimary, strokeWidth = 3.dp)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Analizando con IA...")
-            } else {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Calcular y Guardar", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
+            Icon(Icons.Default.AutoAwesome, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Calcular y Guardar", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
 
         AnimatedVisibility(visible = state.error != null) {
@@ -283,19 +376,13 @@ fun RecipeInputSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
-            enabled = state.recipeInputText.isNotBlank() && !state.isGeneratingRecipe,
+            enabled = state.recipeInputText.isNotBlank(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
             shape = RoundedCornerShape(16.dp)
         ) {
-            if (state.isGeneratingRecipe) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = MaterialTheme.colorScheme.onTertiary, strokeWidth = 3.dp)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text("Cocinando receta...")
-            } else {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Generar Receta", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
+            Icon(Icons.Default.AutoAwesome, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Generar Receta", fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
     }
 }
@@ -456,7 +543,7 @@ fun RecipeCard(recipe: RecipeDto) {
 }
 
 @Composable
-fun MacrosDashboard(calories: Int, protein: Float, carbs: Float, fat: Float) {
+fun MacrosDashboard(calories: Int, goal: Int, protein: Float, carbs: Float, fat: Float) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -468,7 +555,14 @@ fun MacrosDashboard(calories: Int, protein: Float, carbs: Float, fat: Float) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("TOTAL CONSUMIDO", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.onSurfaceVariant, letterSpacing = 1.sp)
-            Text("$calories kcal", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text("$calories", style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+                if (goal > 0) {
+                    Text(" / $goal kcal", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                } else {
+                    Text(" kcal", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(bottom = 4.dp, start = 4.dp))
+                }
+            }
 
             Spacer(modifier = Modifier.height(20.dp))
 
@@ -543,7 +637,8 @@ fun NutritionScreenPreview() {
             CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
                 NutritionBodyScreen(
                     state = NutritionUiState(
-                        totalCalories = 2600,
+                        totalCalories = 1200,
+                        dailyCalorieGoal = 2300,
                         totalProtein = 120f,
                         totalCarbs = 200f,
                         totalFat = 80f,
