@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -38,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.atlaspath.data.remote.dto.RecipeDto
 import edu.ucne.atlaspath.domain.model.RegistroNutricional
 import edu.ucne.atlaspath.presentation.tareas.navigation.LocalSnackbarHost
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -47,6 +49,12 @@ fun NutritionScreen(
     onBack: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    LaunchedEffect(state.isSaved) {
+        if (state.isSaved) {
+            onBack()
+        }
+    }
 
     NutritionBodyScreen(
         state = state,
@@ -63,7 +71,6 @@ fun NutritionBodyScreen(
 ) {
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     val tabs = listOf("Registro Diario", "Chef IA")
-
     val snackbarHost = LocalSnackbarHost.current
     val scope = rememberCoroutineScope()
 
@@ -102,68 +109,70 @@ fun NutritionBodyScreen(
                         item { Spacer(modifier = Modifier.height(8.dp)) }
 
                         if (selectedTabIndex == 0) {
-                            item {
-                                MacrosDashboard(
-                                    calories = state.totalCalories,
-                                    goal = state.dailyCalorieGoal,
-                                    protein = state.totalProtein,
-                                    carbs = state.totalCarbs,
-                                    fat = state.totalFat
-                                )
-                            }
-
-                            if (state.dailyCalorieGoal > 0 && state.totalCalories >= state.dailyCalorieGoal) {
-                                item {
-                                    CalorieWarningCard(
-                                        caloriasActuales = state.totalCalories,
-                                        meta = state.dailyCalorieGoal
-                                    )
-                                }
-                            }
-
-                            item {
-                                FoodInputSection(state = state, onEvent = onEvent)
-                            }
-
-                            item {
-                                DailyRecordsHeader()
-                            }
-
-                            if (state.dailyRecords.isEmpty() && !state.isLoading) {
-                                item {
-                                    EmptyDailyRecordsCard()
-                                }
-                            } else {
-                                items(state.dailyRecords) { record ->
-                                    FoodRecordItem(
-                                        record = record,
-                                        onDelete = {
-                                            onEvent(NutritionEvent.DeleteRecord(record.id))
-                                            scope.launch { snackbarHost.showSnackbar("🗑️ Registro de comida eliminado") }
-                                        }
-                                    )
-                                }
-                            }
+                            dailyRecordTabContent(state, onEvent, scope, snackbarHost)
                         } else {
-                            item {
-                                RecipeInputSection(state = state, onEvent = onEvent)
-                            }
-
-                            if (state.generatedRecipe == null) {
-                                item {
-                                    EmptyRecipeCard()
-                                }
-                            } else {
-                                item {
-                                    RecipeCard(recipe = state.generatedRecipe!!)
-                                }
-                            }
+                            chefIATabContent(state, onEvent)
                         }
 
                         item { Spacer(modifier = Modifier.height(32.dp)) }
                     }
                 }
             }
+        }
+    }
+}
+
+private fun LazyListScope.dailyRecordTabContent(
+    state: NutritionUiState,
+    onEvent: (NutritionEvent) -> Unit,
+    scope: CoroutineScope,
+    snackbarHost: SnackbarHostState
+) {
+    item {
+        MacrosDashboard(
+            calories = state.totalCalories,
+            goal = state.dailyCalorieGoal,
+            protein = state.totalProtein,
+            carbs = state.totalCarbs,
+            fat = state.totalFat
+        )
+    }
+
+    if (state.dailyCalorieGoal > 0 && state.totalCalories >= state.dailyCalorieGoal) {
+        item {
+            CalorieWarningCard(caloriasActuales = state.totalCalories, meta = state.dailyCalorieGoal)
+        }
+    }
+
+    item { FoodInputSection(state = state, onEvent = onEvent) }
+    item { DailyRecordsHeader() }
+
+    if (state.dailyRecords.isEmpty() && !state.isLoading) {
+        item { EmptyDailyRecordsCard() }
+    } else {
+        items(state.dailyRecords) { record ->
+            FoodRecordItem(
+                record = record,
+                onDelete = {
+                    onEvent(NutritionEvent.DeleteRecord(record.id))
+                    scope.launch { snackbarHost.showSnackbar("🗑️ Registro de comida eliminado") }
+                }
+            )
+        }
+    }
+}
+
+private fun LazyListScope.chefIATabContent(
+    state: NutritionUiState,
+    onEvent: (NutritionEvent) -> Unit
+) {
+    item { RecipeInputSection(state = state, onEvent = onEvent) }
+
+    if (state.generatedRecipe == null) {
+        item { EmptyRecipeCard() }
+    } else {
+        state.generatedRecipe?.let { recipe ->
+            item { RecipeCard(recipe = recipe) }
         }
     }
 }
@@ -187,7 +196,6 @@ fun LoadingOverlayView(tipo: String) {
     )
 
     val frasesActivas = if (tipo == "Macros") frasesMacros else frasesReceta
-
     var fraseIndex by remember { mutableIntStateOf(0) }
 
     LaunchedEffect(Unit) {
@@ -212,9 +220,7 @@ fun LoadingOverlayView(tipo: String) {
     val icon = if (tipo == "Macros") Icons.Default.Restaurant else Icons.Default.LocalDining
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(32.dp),
+        modifier = Modifier.fillMaxSize().padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -241,10 +247,7 @@ fun LoadingOverlayView(tipo: String) {
         }
         Spacer(modifier = Modifier.height(24.dp))
         LinearProgressIndicator(
-            modifier = Modifier
-                .fillMaxWidth(0.7f)
-                .height(8.dp)
-                .clip(CircleShape),
+            modifier = Modifier.fillMaxWidth(0.7f).height(8.dp).clip(CircleShape),
             color = colorPrincipal,
             trackColor = MaterialTheme.colorScheme.surfaceVariant
         )
@@ -319,9 +322,7 @@ fun FoodInputSection(
 
         Button(
             onClick = { onEvent(NutritionEvent.AnalyzeAndSaveFood) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = state.foodInputText.isNotBlank(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             shape = RoundedCornerShape(16.dp)
@@ -373,9 +374,7 @@ fun RecipeInputSection(
 
         Button(
             onClick = { onEvent(NutritionEvent.GenerateRecipe) },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
+            modifier = Modifier.fillMaxWidth().height(56.dp),
             enabled = state.recipeInputText.isNotBlank(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary),
             shape = RoundedCornerShape(16.dp)
@@ -403,17 +402,13 @@ fun DailyRecordsHeader() {
 @Composable
 fun EmptyDailyRecordsCard() {
     OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
     ) {
         Column(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(24.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(Icons.Default.Restaurant, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f))
@@ -428,17 +423,13 @@ fun EmptyDailyRecordsCard() {
 @Composable
 fun EmptyRecipeCard() {
     OutlinedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 16.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary.copy(alpha = 0.3f)),
         colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.1f))
     ) {
         Column(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.padding(24.dp).fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Icon(Icons.Default.LocalDining, contentDescription = null, modifier = Modifier.size(48.dp), tint = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.7f))

@@ -59,6 +59,15 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.Locale
 
+data class DashboardNavActions(
+    val onNavigateToBiblioteca: () -> Unit,
+    val onNavigateToRutina: (Int) -> Unit,
+    val onCreateRutina: () -> Unit,
+    val onNavigateToHistorial: () -> Unit,
+    val onNavigateToCalendar: () -> Unit,
+    val onNavigateToNutrition: () -> Unit
+)
+
 @Composable
 fun DashboardScreen(
     viewModel: DashboardViewModel = hiltViewModel(),
@@ -70,15 +79,22 @@ fun DashboardScreen(
     onNavigateToNutrition: () -> Unit
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+
+    val navActions = remember {
+        DashboardNavActions(
+            onNavigateToBiblioteca = onNavigateToBiblioteca,
+            onNavigateToRutina = onNavigateToRutina,
+            onCreateRutina = onCreateRutina,
+            onNavigateToHistorial = onNavigateToHistorial,
+            onNavigateToCalendar = onNavigateToCalendar,
+            onNavigateToNutrition = onNavigateToNutrition
+        )
+    }
+
     DashboardBodyScreen(
         state = state,
         onEvent = viewModel::onEvent,
-        onNavigateToBiblioteca = onNavigateToBiblioteca,
-        onNavigateToRutina = onNavigateToRutina,
-        onCreateRutina = onCreateRutina,
-        onNavigateToHistorial = onNavigateToHistorial,
-        onNavigateToCalendar = onNavigateToCalendar,
-        onNavigateToNutrition = onNavigateToNutrition
+        navActions = navActions
     )
 }
 
@@ -87,12 +103,7 @@ fun DashboardScreen(
 fun DashboardBodyScreen(
     state: DashboardUiState,
     onEvent: (DashboardEvent) -> Unit,
-    onNavigateToBiblioteca: () -> Unit,
-    onNavigateToRutina: (Int) -> Unit,
-    onCreateRutina: () -> Unit,
-    onNavigateToHistorial: () -> Unit,
-    onNavigateToCalendar: () -> Unit,
-    onNavigateToNutrition: () -> Unit
+    navActions: DashboardNavActions
 ) {
     var showAthleteCard by remember { mutableStateOf(false) }
     var showWeightDialog by remember { mutableStateOf(false) }
@@ -141,7 +152,7 @@ fun DashboardBodyScreen(
             TopAppBar(
                 title = { },
                 actions = {
-                    IconButton(onClick = onNavigateToHistorial) {
+                    IconButton(onClick = navActions.onNavigateToHistorial) {
                         Icon(
                             imageVector = Icons.Default.History,
                             contentDescription = "Ver Historial",
@@ -174,7 +185,7 @@ fun DashboardBodyScreen(
                 WeeklyProgressCard(
                     totalEntrenamientos = state.totalEntrenamientos,
                     diasEntrenadosSemana = state.diasEntrenadosSemana,
-                    onCardClick = onNavigateToCalendar
+                    onCardClick = navActions.onNavigateToCalendar
                 )
             }
 
@@ -186,7 +197,7 @@ fun DashboardBodyScreen(
             }
 
             item {
-                NutritionShortcutCard(onCardClick = onNavigateToNutrition)
+                NutritionShortcutCard(onCardClick = navActions.onNavigateToNutrition)
             }
 
             item {
@@ -197,9 +208,7 @@ fun DashboardBodyScreen(
                 SuggestedWorkoutSection(
                     isLoading = state.isLoading,
                     rutinaHoy = state.rutinaHoy,
-                    onCreateRutina = onCreateRutina,
-                    onNavigateToRutina = onNavigateToRutina,
-                    onNavigateToBiblioteca = onNavigateToBiblioteca
+                    navActions = navActions
                 )
                 Spacer(modifier = Modifier.height(32.dp))
             }
@@ -389,7 +398,23 @@ fun MuscleRanksSection(rangosMusculares: List<edu.ucne.atlaspath.domain.model.Ra
             ) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     rangosMusculares.forEach { rango ->
-                        MuscleRankRow(rango.musculo, rango.rangoNombre, rango.progreso, rango.medalla)
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                                Text(rango.musculo, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(rango.medalla, fontSize = 18.sp)
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(rango.rangoNombre, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            LinearProgressIndicator(
+                                progress = { rango.progreso },
+                                modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                            )
+                        }
                     }
                 }
             }
@@ -401,9 +426,7 @@ fun MuscleRanksSection(rangosMusculares: List<edu.ucne.atlaspath.domain.model.Ra
 fun SuggestedWorkoutSection(
     isLoading: Boolean,
     rutinaHoy: Rutina?,
-    onCreateRutina: () -> Unit,
-    onNavigateToRutina: (Int) -> Unit,
-    onNavigateToBiblioteca: () -> Unit
+    navActions: DashboardNavActions
 ) {
     Column {
         Row(
@@ -412,7 +435,7 @@ fun SuggestedWorkoutSection(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("Entrenamiento Sugerido", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold)
-            TextButton(onClick = onCreateRutina) {
+            TextButton(onClick = navActions.onCreateRutina) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("Crear", fontWeight = FontWeight.Bold)
@@ -439,7 +462,7 @@ fun SuggestedWorkoutSection(
                     }
                     Spacer(modifier = Modifier.height(20.dp))
                     Button(
-                        onClick = { onNavigateToRutina(rutinaHoy.rutinaId ?: 0) },
+                        onClick = { navActions.onNavigateToRutina(rutinaHoy.rutinaId) },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
@@ -450,7 +473,7 @@ fun SuggestedWorkoutSection(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedButton(
-                        onClick = onNavigateToBiblioteca,
+                        onClick = navActions.onNavigateToBiblioteca,
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary)
@@ -461,7 +484,7 @@ fun SuggestedWorkoutSection(
             }
         } else {
             OutlinedCard(
-                modifier = Modifier.fillMaxWidth().clickable { onCreateRutina() },
+                modifier = Modifier.fillMaxWidth().clickable { navActions.onCreateRutina() },
                 shape = RoundedCornerShape(16.dp),
                 border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
                 colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
@@ -477,7 +500,7 @@ fun SuggestedWorkoutSection(
                     Text("Crea tu primera rutina de combate o deja que la IA la forje por ti.", textAlign = TextAlign.Center, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(modifier = Modifier.height(20.dp))
                     Button(
-                        onClick = onCreateRutina,
+                        onClick = navActions.onCreateRutina,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
@@ -531,27 +554,6 @@ fun UpdateWeightDialog(currentWeight: Double, onDismiss: () -> Unit, onSave: (Do
         confirmButton = { Button(onClick = { onSave(weightValue.toDouble()) }) { Text("Guardar") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
     )
-}
-
-@Composable
-fun MuscleRankRow(musculo: String, rango: String, progress: Float, medalla: String) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(musculo, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(medalla, fontSize = 18.sp)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(rango, style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-            }
-        }
-        Spacer(modifier = Modifier.height(6.dp))
-        LinearProgressIndicator(
-            progress = { progress },
-            modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
-            color = MaterialTheme.colorScheme.primary,
-            trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-        )
-    }
 }
 
 @Composable
@@ -674,12 +676,7 @@ fun DashboardEmptyPreview() {
                         rutinaHoy = null
                     ),
                     onEvent = {},
-                    onNavigateToBiblioteca = {},
-                    onNavigateToRutina = {},
-                    onCreateRutina = {},
-                    onNavigateToHistorial = {},
-                    onNavigateToCalendar = {},
-                    onNavigateToNutrition = {}
+                    navActions = DashboardNavActions({}, {}, {}, {}, {}, {})
                 )
             }
         }
@@ -716,12 +713,7 @@ fun DashboardPopulatedPreview() {
                         totalEntrenamientos = 12
                     ),
                     onEvent = {},
-                    onNavigateToBiblioteca = {},
-                    onNavigateToRutina = {},
-                    onCreateRutina = {},
-                    onNavigateToHistorial = {},
-                    onNavigateToCalendar = {},
-                    onNavigateToNutrition = {}
+                    navActions = DashboardNavActions({}, {}, {}, {}, {}, {})
                 )
             }
         }

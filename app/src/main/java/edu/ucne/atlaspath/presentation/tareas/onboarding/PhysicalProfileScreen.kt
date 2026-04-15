@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.util.Locale
 import kotlin.math.roundToInt
 
 @Composable
@@ -71,100 +72,127 @@ fun PhysicalProfileBodyScreen(
             )
         },
         bottomBar = {
-            Column(modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(16.dp)) {
-                AnimatedVisibility(visible = state.showValidationError) {
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
-                        shape = RoundedCornerShape(12.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
-                    ) {
-                        Text(
-                            text = "Por favor, completa todos los campos del perfil.",
-                            modifier = Modifier.padding(12.dp),
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-
-                Button(
-                    onClick = { onEvent(PhysicalProfileEvent.SaveProfile(onProfileSaved)) },
-                    modifier = Modifier.fillMaxWidth().height(60.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    Text("Finalizar Perfil", fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Icon(Icons.Filled.ArrowForward, contentDescription = null)
-                }
-            }
+            ProfileBottomBar(
+                showValidationError = state.showValidationError,
+                onSaveClick = { onEvent(PhysicalProfileEvent.SaveProfile(onProfileSaved)) }
+            )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 24.dp).verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Ayuda a Atlas a conocerte", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
-
-            ProfileDropdown("Género Biológico", state.selectedGender, listOf("Hombre", "Mujer", "Otro")) { onEvent(PhysicalProfileEvent.OnGenderChange(it)) }
-
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ProfileFormContent(
+            state = state,
+            onEvent = onEvent,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 24.dp)
+                .verticalScroll(scrollState)
+        )
+    }
+}
+@Composable
+private fun ProfileBottomBar(
+    showValidationError: Boolean,
+    onSaveClick: () -> Unit
+) {
+    Column(modifier = Modifier.background(MaterialTheme.colorScheme.background).padding(16.dp)) {
+        AnimatedVisibility(visible = showValidationError) {
+            Surface(
+                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.9f),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    ProfileSlider("Edad", "${state.age.roundToInt()} años", state.age, 14f..90f) { onEvent(PhysicalProfileEvent.OnAgeChange(it)) }
-                }
+                Text(
+                    text = "Por favor, completa todos los campos del perfil.",
+                    modifier = Modifier.padding(12.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    textAlign = TextAlign.Center
+                )
             }
-
-            OutlinedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-                colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    ProfileUnitSlider("Peso Corporal", if (state.isKg) "kg" else "lbs", state.weightValue, if (state.isKg) 40f..160f else 90f..350f, { onEvent(PhysicalProfileEvent.OnWeightChange(it)) }) {
-                        onEvent(PhysicalProfileEvent.ToggleWeightUnit)
-                    }
-                    Spacer(modifier = Modifier.height(16.dp))
-                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                    Spacer(modifier = Modifier.height(16.dp))
-                    ProfileUnitSlider("Estatura", if (state.isCm) "cm" else "ft", state.heightValue, if (state.isCm) 140f..210f else 4.5f..7f, { onEvent(PhysicalProfileEvent.OnHeightChange(it)) }) {
-                        onEvent(PhysicalProfileEvent.ToggleHeightUnit)
-                    }
-                }
-            }
-
-            ProfileDropdown("Experiencia", state.selectedLevel, listOf("Principiante", "Intermedio", "Avanzado")) { onEvent(PhysicalProfileEvent.OnLevelChange(it)) }
-
-            Column {
-                Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Tipo de Cuerpo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                    IconButton(
-                        onClick = { onEvent(PhysicalProfileEvent.ToggleHelp(true)) },
-                        modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
-                    ) { Icon(Icons.Default.Info, contentDescription = "Info", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary) }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                ProfileDropdown("", state.selectedSomatotype, listOf("Ectomorfo", "Mesomorfo", "Endomorfo")) { onEvent(PhysicalProfileEvent.OnSomatotypeChange(it)) }
-            }
-
-            Column {
-                Text("Objetivo principal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-                Spacer(modifier = Modifier.height(8.dp))
-                ProfileDropdown("", state.selectedGoal, listOf("Pérdida de Grasa", "Ganancia Muscular", "Recomposición", "Mantenimiento")) { onEvent(PhysicalProfileEvent.OnGoalChange(it)) }
-            }
-
-            Spacer(modifier = Modifier.height(40.dp))
         }
+
+        Button(
+            onClick = onSaveClick,
+            modifier = Modifier.fillMaxWidth().height(60.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+            elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
+        ) {
+            Text("Finalizar Perfil", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.width(12.dp))
+            Icon(Icons.Filled.ArrowForward, contentDescription = null)
+        }
+    }
+}
+
+@Composable
+private fun ProfileFormContent(
+    state: PhysicalProfileUiState,
+    onEvent: (PhysicalProfileEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(text = "Ayuda a Atlas a conocerte", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
+
+        ProfileDropdown("Género Biológico", state.selectedGender, listOf("Hombre", "Mujer", "Otro")) { onEvent(PhysicalProfileEvent.OnGenderChange(it)) }
+
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                ProfileSlider("Edad", "${state.age.roundToInt()} años", state.age, 14f..90f) { onEvent(PhysicalProfileEvent.OnAgeChange(it)) }
+            }
+        }
+
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                ProfileUnitSlider("Peso Corporal", if (state.isKg) "kg" else "lbs", state.weightValue, if (state.isKg) 40f..160f else 90f..350f, { onEvent(PhysicalProfileEvent.OnWeightChange(it)) }) {
+                    onEvent(PhysicalProfileEvent.ToggleWeightUnit)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                Spacer(modifier = Modifier.height(16.dp))
+                ProfileUnitSlider("Estatura", if (state.isCm) "cm" else "ft", state.heightValue, if (state.isCm) 140f..210f else 4.5f..7f, { onEvent(PhysicalProfileEvent.OnHeightChange(it)) }) {
+                    onEvent(PhysicalProfileEvent.ToggleHeightUnit)
+                }
+            }
+        }
+
+        ProfileDropdown("Experiencia", state.selectedLevel, listOf("Principiante", "Intermedio", "Avanzado")) { onEvent(PhysicalProfileEvent.OnLevelChange(it)) }
+
+        Column {
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                Text("Tipo de Cuerpo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                IconButton(
+                    onClick = { onEvent(PhysicalProfileEvent.ToggleHelp(true)) },
+                    modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
+                ) { Icon(Icons.Default.Info, contentDescription = "Info", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary) }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            ProfileDropdown("", state.selectedSomatotype, listOf("Ectomorfo", "Mesomorfo", "Endomorfo")) { onEvent(PhysicalProfileEvent.OnSomatotypeChange(it)) }
+        }
+
+        Column {
+            Text("Objetivo principal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(8.dp))
+            ProfileDropdown("", state.selectedGoal, listOf("Pérdida de Grasa", "Ganancia Muscular", "Recomposición", "Mantenimiento")) { onEvent(PhysicalProfileEvent.OnGoalChange(it)) }
+        }
+
+        Spacer(modifier = Modifier.height(40.dp))
     }
 }
 
@@ -221,15 +249,28 @@ fun ProfileSlider(label: String, valueText: String, value: Float, range: ClosedF
 
 @Composable
 fun ProfileUnitSlider(label: String, unit: String, value: Float, range: ClosedFloatingPointRange<Float>, onValueChange: (Float) -> Unit, onUnitToggle: () -> Unit) {
+    val alternateUnit = when (unit) {
+        "kg" -> "Lbs"
+        "lbs" -> "Kg"
+        "cm" -> "Ft"
+        else -> "Cm"
+    }
+
+    val formattedValue = if (unit == "ft") {
+        String.format(Locale.US, "%.1f", value)
+    } else {
+        value.roundToInt().toString()
+    }
+
     Column {
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
             Text(label, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Surface(modifier = Modifier.clickable { onUnitToggle() }, shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surfaceVariant, border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
-                Text("Cambiar a ${if (unit == "kg") "Lbs" else if (unit == "cm") "Ft" else if (unit == "lbs") "Kg" else "Cm"}", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Cambiar a $alternateUnit", modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
-        Text("${if (unit == "ft") String.format("%.1f", value) else value.roundToInt()} $unit", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
+        Text("$formattedValue $unit", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Black)
         Spacer(modifier = Modifier.height(8.dp))
         Slider(value = value, onValueChange = onValueChange, valueRange = range, colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary, inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant))
     }

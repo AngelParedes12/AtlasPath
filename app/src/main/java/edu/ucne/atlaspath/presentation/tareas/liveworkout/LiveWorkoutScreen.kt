@@ -165,8 +165,6 @@ fun ActiveExerciseCard(
         if (allSetsCompleted) isExpanded = false
     }
 
-    val rotationState by animateFloatAsState(targetValue = if (isExpanded) 180f else 0f, label = "rotation")
-
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
@@ -183,88 +181,117 @@ fun ActiveExerciseCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { isExpanded = !isExpanded }
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = activeExercise.ejercicio.nombre,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Black,
-                            color = if (allSetsCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary
-                        )
-                        if (allSetsCompleted) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Completado",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                    Text(
-                        text = if (allSetsCompleted) "¡Ejercicio Completado!" else "Músculo: ${activeExercise.ejercicio.grupoMuscular}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (allSetsCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowDown,
-                    contentDescription = "Expandir",
-                    modifier = Modifier.rotate(rotationState),
-                    tint = if (allSetsCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
-                )
-            }
+            ExerciseHeader(
+                activeExercise = activeExercise,
+                allSetsCompleted = allSetsCompleted,
+                isExpanded = isExpanded,
+                onHeaderClick = { isExpanded = !isExpanded }
+            )
 
             AnimatedVisibility(visible = isExpanded) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                    Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Set", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                        Text("LBS", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
-                        Text("Reps", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
-                        Text("✓", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
-                    }
-
-                    activeExercise.sets.forEachIndexed { setIndex, set ->
-                        WorkoutSetRow(
-                            set = set,
-                            exIndex = exIndex,
-                            setIndex = setIndex,
-                            onEvent = onEvent
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly
-                    ) {
-                        TextButton(
-                            onClick = { onEvent(LiveWorkoutEvent.RemoveSet(exIndex)) },
-                            enabled = activeExercise.sets.isNotEmpty()
-                        ) {
-                            Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Quitar", fontWeight = FontWeight.Bold)
-                        }
-                        TextButton(onClick = { onEvent(LiveWorkoutEvent.AddSet(exIndex)) }) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Añadir Set", fontWeight = FontWeight.Bold)
-                        }
-                    }
-                }
+                ExerciseExpandedContent(
+                    activeExercise = activeExercise,
+                    exIndex = exIndex,
+                    onEvent = onEvent
+                )
             }
         }
     }
 }
 
+@Composable
+private fun ExerciseHeader(
+    activeExercise: ActiveExercise,
+    allSetsCompleted: Boolean,
+    isExpanded: Boolean,
+    onHeaderClick: () -> Unit
+) {
+    val rotationState by animateFloatAsState(targetValue = if (isExpanded) 180f else 0f, label = "rotation")
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onHeaderClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = activeExercise.ejercicio.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Black,
+                    color = if (allSetsCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.primary
+                )
+                if (allSetsCompleted) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = "Completado",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
+            Text(
+                text = if (allSetsCompleted) "¡Ejercicio Completado!" else "Músculo: ${activeExercise.ejercicio.grupoMuscular}",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (allSetsCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowDown,
+            contentDescription = "Expandir",
+            modifier = Modifier.rotate(rotationState),
+            tint = if (allSetsCompleted) MaterialTheme.colorScheme.primary.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
+private fun ExerciseExpandedContent(
+    activeExercise: ActiveExercise,
+    exIndex: Int,
+    onEvent: (LiveWorkoutEvent) -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Set", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+            Text("LBS", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
+            Text("Reps", fontWeight = FontWeight.Bold, modifier = Modifier.weight(2f), textAlign = TextAlign.Center)
+            Text("✓", fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        }
+
+        activeExercise.sets.forEachIndexed { setIndex, set ->
+            WorkoutSetRow(
+                set = set,
+                exIndex = exIndex,
+                setIndex = setIndex,
+                onEvent = onEvent
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 16.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            TextButton(
+                onClick = { onEvent(LiveWorkoutEvent.RemoveSet(exIndex)) },
+                enabled = activeExercise.sets.isNotEmpty()
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Quitar", fontWeight = FontWeight.Bold)
+            }
+            TextButton(onClick = { onEvent(LiveWorkoutEvent.AddSet(exIndex)) }) {
+                Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Añadir Set", fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
 @Composable
 fun WorkoutSetRow(
     set: ActiveSet,

@@ -30,10 +30,6 @@ import androidx.compose.ui.unit.sp
 import edu.ucne.atlaspath.presentation.tareas.navigation.LocalSnackbarHost
 import kotlinx.coroutines.launch
 
-
-
-
-
 @Composable
 fun EditProfileScreen(
     onBack: () -> Unit
@@ -77,8 +73,6 @@ fun EditProfileBodyScreen(
     onEvent: (EditProfileEvent) -> Unit,
     onBack: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-
     Scaffold(
         topBar = { EditProfileTopBar(onBack = onBack) },
         bottomBar = {
@@ -89,48 +83,61 @@ fun EditProfileBodyScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            Spacer(modifier = Modifier.height(8.dp))
+        EditProfileFormContent(
+            state = state,
+            onEvent = onEvent,
+            modifier = Modifier.padding(padding)
+        )
+    }
+}
+@Composable
+private fun EditProfileFormContent(
+    state: EditProfileUiState,
+    onEvent: (EditProfileEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val scrollState = rememberScrollState()
 
-            IdentitySection(
-                nombre = state.nombre,
-                onNombreChange = { onEvent(EditProfileEvent.OnNombreChange(it)) }
-            )
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp)
+            .verticalScroll(scrollState),
+        verticalArrangement = Arrangement.spacedBy(24.dp)
+    ) {
+        Spacer(modifier = Modifier.height(8.dp))
 
-            BiometrySection(
-                pesoLbs = state.pesoLbs,
-                alturaCm = state.alturaCm,
-                onPesoChange = { onEvent(EditProfileEvent.OnPesoChange(it)) },
-                onAlturaChange = { onEvent(EditProfileEvent.OnAlturaChange(it)) }
-            )
+        IdentitySection(
+            nombre = state.nombre,
+            onNombreChange = { onEvent(EditProfileEvent.OnNombreChange(it)) }
+        )
 
-            SelectionFlowRow(
-                title = "Objetivo del Santuario",
-                options = listOf("Hipertrofia", "Fuerza", "Resistencia", "Pérdida de Peso"),
-                selectedOption = state.objetivo,
-                activeColor = MaterialTheme.colorScheme.primary,
-                onActiveColor = MaterialTheme.colorScheme.onPrimary,
-                onSelect = { onEvent(EditProfileEvent.OnObjetivoChange(it)) }
-            )
+        BiometrySection(
+            pesoLbs = state.pesoLbs,
+            alturaCm = state.alturaCm,
+            onPesoChange = { onEvent(EditProfileEvent.OnPesoChange(it)) },
+            onAlturaChange = { onEvent(EditProfileEvent.OnAlturaChange(it)) }
+        )
 
-            SelectionFlowRow(
-                title = "Rango Actual",
-                options = listOf("Principiante", "Intermedio", "Avanzado"),
-                selectedOption = state.nivel,
-                activeColor = MaterialTheme.colorScheme.tertiary,
-                onActiveColor = MaterialTheme.colorScheme.onTertiary,
-                onSelect = { onEvent(EditProfileEvent.OnNivelChange(it)) }
-            )
+        SelectionFlowRow(
+            title = "Objetivo del Santuario",
+            options = listOf("Hipertrofia", "Fuerza", "Resistencia", "Pérdida de Peso"),
+            selectedOption = state.objetivo,
+            activeColor = MaterialTheme.colorScheme.primary,
+            onActiveColor = MaterialTheme.colorScheme.onPrimary,
+            onSelect = { onEvent(EditProfileEvent.OnObjetivoChange(it)) }
+        )
 
-            Spacer(modifier = Modifier.height(100.dp))
-        }
+        SelectionFlowRow(
+            title = "Rango Actual",
+            options = listOf("Principiante", "Intermedio", "Avanzado"),
+            selectedOption = state.nivel,
+            activeColor = MaterialTheme.colorScheme.tertiary,
+            onActiveColor = MaterialTheme.colorScheme.onTertiary,
+            onSelect = { onEvent(EditProfileEvent.OnNivelChange(it)) }
+        )
+
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 

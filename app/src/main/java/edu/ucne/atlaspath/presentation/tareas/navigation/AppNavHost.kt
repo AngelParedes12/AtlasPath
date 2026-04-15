@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -46,21 +47,7 @@ fun AppNavHost(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-
-    val showBottomBar = currentRoute?.let { route ->
-        when {
-            route.contains("PhysicalProfile") -> false
-            route.contains("EditProfile") -> false
-            route.contains("SanctuaryLoading") -> false
-            route.contains("Onboarding") -> false
-            route.contains("Dashboard") -> true
-            route.contains("RutinaList") -> true
-            route.contains("Nutrition") -> true
-            route.contains("Profile") -> true
-            else -> false
-        }
-    } ?: false
-
+    val showBottomBar = shouldShowBottomBar(currentRoute)
     val snackbarHostState = remember { SnackbarHostState() }
 
     CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
@@ -87,114 +74,133 @@ fun AppNavHost(
                 startDestination = startDestination,
                 modifier = Modifier.padding(innerPadding)
             ) {
-                composable<Screen.Onboarding> {
-                    OnboardingScreen(onFinish = { navController.navigate(Screen.PhysicalProfile) })
-                }
-
-                composable<Screen.PhysicalProfile> {
-                    PhysicalProfileScreen(
-                        onBack = { navController.popBackStack() },
-                        onProfileSaved = {
-                            navController.navigate(Screen.SanctuaryLoading) {
-                                popUpTo<Screen.Onboarding> { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable<Screen.SanctuaryLoading> {
-                    SanctuaryLoadingScreen(
-                        onLoadingComplete = {
-                            navController.navigate(Screen.Dashboard) {
-                                popUpTo<Screen.SanctuaryLoading> { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable<Screen.Dashboard> {
-                    val dashboardViewModel: DashboardViewModel = hiltViewModel()
-                    val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
-
-                    DashboardScreen(
-                        viewModel = dashboardViewModel,
-                        onNavigateToBiblioteca = { navController.navigate(Screen.RutinaList) },
-                        onNavigateToRutina = { id -> navController.navigate(Screen.LiveWorkout(id)) },
-                        onCreateRutina = { navController.navigate(Screen.RutinaDetail(0)) },
-                        onNavigateToHistorial = { navController.navigate(Screen.History) },
-                        onNavigateToCalendar = { navController.navigate(Screen.FullCalendar) },
-                        onNavigateToNutrition = { navController.navigate(Screen.Nutrition(dashboardState.pesoActualLbs.toFloat())) }
-                    )
-                }
-
-                composable<Screen.RutinaList> {
-                    ListRutinaScreen(
-                        onRutinaClick = { id -> navController.navigate(Screen.RutinaDetail(id)) },
-                        onCreateRutina = { navController.navigate(Screen.RutinaDetail(0)) },
-                        onTrainClick = { id -> navController.navigate(Screen.LiveWorkout(id)) }
-                    )
-                }
-
-                composable<Screen.RutinaDetail> {
-                    DetailRutinaScreen(
-                        onBack = { navController.navigateUp() },
-                        onNavigateToAi = {
-                            navController.navigate(Screen.AiCreator) {
-                                popUpTo<Screen.RutinaDetail> { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable<Screen.AiCreator> {
-                    AiCreatorScreen(
-                        onBack = { navController.navigateUp() },
-                        onNavigateToLiveWorkout = { id ->
-                            navController.navigate(Screen.LiveWorkout(id)) {
-                                popUpTo<Screen.AiCreator> { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable<Screen.Nutrition> {
-                    NutritionScreen(onBack = { navController.navigateUp() })
-                }
-
-                composable<Screen.Profile> {
-                    ProfileScreen(
-                        onNavigateToEditProfile = { navController.navigate(Screen.EditProfile) },
-                        onLogout = {
-                            navController.navigate(Screen.Onboarding) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }
-                    )
-                }
-
-                composable<Screen.EditProfile> {
-                    EditProfileScreen(onBack = { navController.navigateUp() })
-                }
-
-                composable<Screen.LiveWorkout> {
-                    LiveWorkoutScreen(
-                        onFinish = {
-                            navController.navigate(Screen.Dashboard) {
-                                popUpTo<Screen.Dashboard> { inclusive = true }
-                            }
-                        },
-                        onCancel = { navController.navigateUp() }
-                    )
-                }
-
-                composable<Screen.History> { HistoryScreen(onBack = { navController.navigateUp() }) }
-
-                composable<Screen.ExerciseExplorer> { ExerciseExplorerScreen(onBack = { navController.navigateUp() }) }
-
-                composable<Screen.FullCalendar> { FullCalendarScreen(onBack = { navController.navigateUp() }) }
+                appNavGraph(navController)
             }
         }
     }
+}
+
+private fun shouldShowBottomBar(currentRoute: String?): Boolean {
+    if (currentRoute == null) return false
+    return when {
+        currentRoute.contains("PhysicalProfile") -> false
+        currentRoute.contains("EditProfile") -> false
+        currentRoute.contains("SanctuaryLoading") -> false
+        currentRoute.contains("Onboarding") -> false
+        currentRoute.contains("Dashboard") -> true
+        currentRoute.contains("RutinaList") -> true
+        currentRoute.contains("Nutrition") -> true
+        currentRoute.contains("Profile") -> true
+        else -> false
+    }
+}
+
+private fun NavGraphBuilder.appNavGraph(navController: NavHostController) {
+    composable<Screen.Onboarding> {
+        OnboardingScreen(onFinish = { navController.navigate(Screen.PhysicalProfile) })
+    }
+
+    composable<Screen.PhysicalProfile> {
+        PhysicalProfileScreen(
+            onBack = { navController.popBackStack() },
+            onProfileSaved = {
+                navController.navigate(Screen.SanctuaryLoading) {
+                    popUpTo<Screen.Onboarding> { inclusive = true }
+                }
+            }
+        )
+    }
+
+    composable<Screen.SanctuaryLoading> {
+        SanctuaryLoadingScreen(
+            onLoadingComplete = {
+                navController.navigate(Screen.Dashboard) {
+                    popUpTo<Screen.SanctuaryLoading> { inclusive = true }
+                }
+            }
+        )
+    }
+
+    composable<Screen.Dashboard> {
+        val dashboardViewModel: DashboardViewModel = hiltViewModel()
+        val dashboardState by dashboardViewModel.state.collectAsStateWithLifecycle()
+
+        DashboardScreen(
+            viewModel = dashboardViewModel,
+            onNavigateToBiblioteca = { navController.navigate(Screen.RutinaList) },
+            onNavigateToRutina = { id -> navController.navigate(Screen.LiveWorkout(id)) },
+            onCreateRutina = { navController.navigate(Screen.RutinaDetail(0)) },
+            onNavigateToHistorial = { navController.navigate(Screen.History) },
+            onNavigateToCalendar = { navController.navigate(Screen.FullCalendar) },
+            onNavigateToNutrition = { navController.navigate(Screen.Nutrition(dashboardState.pesoActualLbs.toFloat())) }
+        )
+    }
+
+    composable<Screen.RutinaList> {
+        ListRutinaScreen(
+            onRutinaClick = { id -> navController.navigate(Screen.RutinaDetail(id)) },
+            onCreateRutina = { navController.navigate(Screen.RutinaDetail(0)) },
+            onTrainClick = { id -> navController.navigate(Screen.LiveWorkout(id)) }
+        )
+    }
+
+    composable<Screen.RutinaDetail> {
+        DetailRutinaScreen(
+            onBack = { navController.navigateUp() },
+            onNavigateToAi = {
+                navController.navigate(Screen.AiCreator) {
+                    popUpTo<Screen.RutinaDetail> { inclusive = true }
+                }
+            }
+        )
+    }
+
+    composable<Screen.AiCreator> {
+        AiCreatorScreen(
+            onBack = { navController.navigateUp() },
+            onNavigateToLiveWorkout = { id ->
+                navController.navigate(Screen.LiveWorkout(id)) {
+                    popUpTo<Screen.AiCreator> { inclusive = true }
+                }
+            }
+        )
+    }
+
+    composable<Screen.Nutrition> {
+        NutritionScreen(onBack = { navController.navigateUp() })
+    }
+
+    composable<Screen.Profile> {
+        ProfileScreen(
+            onNavigateToEditProfile = { navController.navigate(Screen.EditProfile) },
+            onLogout = {
+                navController.navigate(Screen.Onboarding) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
+        )
+    }
+
+    composable<Screen.EditProfile> {
+        EditProfileScreen(onBack = { navController.navigateUp() })
+    }
+
+    composable<Screen.LiveWorkout> {
+        LiveWorkoutScreen(
+            onFinish = {
+                navController.navigate(Screen.Dashboard) {
+                    popUpTo<Screen.Dashboard> { inclusive = true }
+                }
+            },
+            onCancel = { navController.navigateUp() }
+        )
+    }
+
+    composable<Screen.History> { HistoryScreen(onBack = { navController.navigateUp() }) }
+
+    composable<Screen.ExerciseExplorer> { ExerciseExplorerScreen(onBack = { navController.navigateUp() }) }
+
+    composable<Screen.FullCalendar> { FullCalendarScreen(onBack = { navController.navigateUp() }) }
 }
 
 @Composable
@@ -211,14 +217,7 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Inicio", fontWeight = if (isDashboard) FontWeight.Bold else FontWeight.Normal) },
             selected = isDashboard,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer, selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer),
-            onClick = {
-                if (!isDashboard) {
-                    navController.navigate(Screen.Dashboard) {
-                        popUpTo<Screen.Dashboard> { inclusive = false }
-                        launchSingleTop = true
-                    }
-                }
-            }
+            onClick = { navigateToDashboard(navController, isDashboard) }
         )
 
         val isRutinaList = currentRoute?.contains("RutinaList") == true
@@ -227,14 +226,7 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Biblioteca", fontWeight = if (isRutinaList) FontWeight.Bold else FontWeight.Normal) },
             selected = isRutinaList,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer, selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer),
-            onClick = {
-                if (!isRutinaList) {
-                    navController.navigate(Screen.RutinaList) {
-                        popUpTo<Screen.Dashboard> { saveState = true }
-                        launchSingleTop = true; restoreState = true
-                    }
-                }
-            }
+            onClick = { navigateToRutinaList(navController, isRutinaList) }
         )
 
         val isNutrition = currentRoute?.contains("Nutrition") == true
@@ -243,14 +235,7 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Nutrición", fontWeight = if (isNutrition) FontWeight.Bold else FontWeight.Normal) },
             selected = isNutrition,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.tertiaryContainer, selectedIconColor = MaterialTheme.colorScheme.onTertiaryContainer),
-            onClick = {
-                if (!isNutrition) {
-                    navController.navigate(Screen.Nutrition(0f)) {
-                        popUpTo<Screen.Dashboard> { saveState = true }
-                        launchSingleTop = true; restoreState = true
-                    }
-                }
-            }
+            onClick = { navigateToNutrition(navController, isNutrition) }
         )
 
         val isProfile = currentRoute?.contains("Profile") == true
@@ -259,14 +244,43 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Perfil", fontWeight = if (isProfile) FontWeight.Bold else FontWeight.Normal) },
             selected = isProfile,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer, selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer),
-            onClick = {
-                if (!isProfile) {
-                    navController.navigate(Screen.Profile) {
-                        popUpTo<Screen.Dashboard> { saveState = true }
-                        launchSingleTop = true; restoreState = true
-                    }
-                }
-            }
+            onClick = { navigateToProfile(navController, isProfile) }
         )
+    }
+}
+
+private fun navigateToDashboard(navController: NavHostController, isDashboard: Boolean) {
+    if (!isDashboard) {
+        navController.navigate(Screen.Dashboard) {
+            popUpTo<Screen.Dashboard> { inclusive = false }
+            launchSingleTop = true
+        }
+    }
+}
+
+private fun navigateToRutinaList(navController: NavHostController, isRutinaList: Boolean) {
+    if (!isRutinaList) {
+        navController.navigate(Screen.RutinaList) {
+            popUpTo<Screen.Dashboard> { saveState = true }
+            launchSingleTop = true; restoreState = true
+        }
+    }
+}
+
+private fun navigateToNutrition(navController: NavHostController, isNutrition: Boolean) {
+    if (!isNutrition) {
+        navController.navigate(Screen.Nutrition(0f)) {
+            popUpTo<Screen.Dashboard> { saveState = true }
+            launchSingleTop = true; restoreState = true
+        }
+    }
+}
+
+private fun navigateToProfile(navController: NavHostController, isProfile: Boolean) {
+    if (!isProfile) {
+        navController.navigate(Screen.Profile) {
+            popUpTo<Screen.Dashboard> { saveState = true }
+            launchSingleTop = true; restoreState = true
+        }
     }
 }
