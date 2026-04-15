@@ -99,7 +99,7 @@ fun NutritionBodyScreen(
                     )
                 }
 
-                if (state.totalCalories >= state.dailyCalorieGoal) {
+                if (state.dailyCalorieGoal > 0 && state.totalCalories >= state.dailyCalorieGoal) {
                     item {
                         CalorieWarningCard(
                             caloriasActuales = state.totalCalories,

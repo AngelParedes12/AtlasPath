@@ -17,7 +17,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -49,10 +48,17 @@ fun AppNavHost(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val showBottomBar = currentRoute?.let { route ->
-        route.contains("Dashboard") ||
-                route.contains("RutinaList") ||
-                route.contains("Nutrition") ||
-                route.contains("Profile")
+        when {
+            route.contains("PhysicalProfile") -> false
+            route.contains("EditProfile") -> false
+            route.contains("SanctuaryLoading") -> false
+            route.contains("Onboarding") -> false
+            route.contains("Dashboard") -> true
+            route.contains("RutinaList") -> true
+            route.contains("Nutrition") -> true
+            route.contains("Profile") -> true
+            else -> false
+        }
     } ?: false
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -205,7 +211,14 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Inicio", fontWeight = if (isDashboard) FontWeight.Bold else FontWeight.Normal) },
             selected = isDashboard,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer, selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer),
-            onClick = { if (!isDashboard) { navController.navigate(Screen.Dashboard) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true } } }
+            onClick = {
+                if (!isDashboard) {
+                    navController.navigate(Screen.Dashboard) {
+                        popUpTo<Screen.Dashboard> { inclusive = false }
+                        launchSingleTop = true
+                    }
+                }
+            }
         )
 
         val isRutinaList = currentRoute?.contains("RutinaList") == true
@@ -214,7 +227,14 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Biblioteca", fontWeight = if (isRutinaList) FontWeight.Bold else FontWeight.Normal) },
             selected = isRutinaList,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.secondaryContainer, selectedIconColor = MaterialTheme.colorScheme.onSecondaryContainer),
-            onClick = { if (!isRutinaList) { navController.navigate(Screen.RutinaList) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true } } }
+            onClick = {
+                if (!isRutinaList) {
+                    navController.navigate(Screen.RutinaList) {
+                        popUpTo<Screen.Dashboard> { saveState = true }
+                        launchSingleTop = true; restoreState = true
+                    }
+                }
+            }
         )
 
         val isNutrition = currentRoute?.contains("Nutrition") == true
@@ -223,7 +243,14 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Nutrición", fontWeight = if (isNutrition) FontWeight.Bold else FontWeight.Normal) },
             selected = isNutrition,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.tertiaryContainer, selectedIconColor = MaterialTheme.colorScheme.onTertiaryContainer),
-            onClick = { if (!isNutrition) { navController.navigate(Screen.Nutrition(0f)) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true } } }
+            onClick = {
+                if (!isNutrition) {
+                    navController.navigate(Screen.Nutrition(0f)) {
+                        popUpTo<Screen.Dashboard> { saveState = true }
+                        launchSingleTop = true; restoreState = true
+                    }
+                }
+            }
         )
 
         val isProfile = currentRoute?.contains("Profile") == true
@@ -232,7 +259,14 @@ fun BottomNavigationBar(navController: NavHostController, currentRoute: String?)
             label = { Text("Perfil", fontWeight = if (isProfile) FontWeight.Bold else FontWeight.Normal) },
             selected = isProfile,
             colors = NavigationBarItemDefaults.colors(indicatorColor = MaterialTheme.colorScheme.primaryContainer, selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer),
-            onClick = { if (!isProfile) { navController.navigate(Screen.Profile) { popUpTo(navController.graph.findStartDestination().id) { saveState = true }; launchSingleTop = true; restoreState = true } } }
+            onClick = {
+                if (!isProfile) {
+                    navController.navigate(Screen.Profile) {
+                        popUpTo<Screen.Dashboard> { saveState = true }
+                        launchSingleTop = true; restoreState = true
+                    }
+                }
+            }
         )
     }
 }

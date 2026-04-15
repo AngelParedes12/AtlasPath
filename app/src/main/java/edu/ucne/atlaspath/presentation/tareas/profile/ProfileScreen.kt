@@ -5,54 +5,37 @@ package edu.ucne.atlaspath.presentation.tareas.profile
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowRight
-import androidx.compose.material.icons.automirrored.filled.ExitToApp
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MonitorWeight
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import edu.ucne.atlaspath.presentation.tareas.navigation.LocalSnackbarHost
-import kotlinx.coroutines.launch
-
-data class ProfileUiState(
-    val nombre: String = "Angel Paredes",
-    val nivel: Int = 5,
-    val rango: String = "Guerrero"
-)
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun ProfileScreen(
+    viewModel: ProfileViewModel = hiltViewModel(),
     onNavigateToEditProfile: () -> Unit,
     onLogout: () -> Unit
 ) {
-    val state by remember { mutableStateOf(ProfileUiState()) }
-
+    val state by viewModel.state.collectAsStateWithLifecycle()
     ProfileBodyScreen(
         state = state,
-        onNavigateToEditProfile = onNavigateToEditProfile,
-        onLogout = onLogout
+        onNavigateToEditProfile = onNavigateToEditProfile
     )
 }
 
@@ -60,13 +43,8 @@ fun ProfileScreen(
 @Composable
 fun ProfileBodyScreen(
     state: ProfileUiState,
-    onNavigateToEditProfile: () -> Unit,
-    onLogout: () -> Unit
+    onNavigateToEditProfile: () -> Unit
 ) {
-    val scrollState = rememberScrollState()
-    val snackbarHost = LocalSnackbarHost.current
-    val scope = rememberCoroutineScope()
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -78,16 +56,12 @@ fun ProfileBodyScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 16.dp)
-                .verticalScroll(scrollState),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+                .padding(horizontal = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Box(contentAlignment = Alignment.BottomEnd) {
                 Box(
                     modifier = Modifier
                         .size(120.dp)
@@ -95,133 +69,101 @@ fun ProfileBodyScreen(
                         .background(MaterialTheme.colorScheme.primaryContainer),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Person,
-                        contentDescription = null,
-                        modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .offset(x = (-8).dp, y = (-8).dp)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
-                            .clickable { onNavigateToEditProfile() },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onPrimary)
-                    }
+                    Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(64.dp), tint = MaterialTheme.colorScheme.onPrimaryContainer)
                 }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(state.nombre, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.onBackground)
-                Text("Atleta AtlasPath", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = MaterialTheme.colorScheme.tertiaryContainer
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable { onNavigateToEditProfile() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(Icons.Default.WorkspacePremium, contentDescription = null, tint = MaterialTheme.colorScheme.onTertiaryContainer, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Nivel ${state.nivel} - ${state.rango}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onTertiaryContainer)
-                    }
+                    Icon(Icons.Default.Edit, contentDescription = "Editar", modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
 
-            Text("Configuración Física", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.height(16.dp))
 
-            ElevatedCard(
+            Text(
+                text = state.userName.ifBlank { "Atleta" },
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text("Atleta AtlasPath", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Row(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.WorkspacePremium, contentDescription = null, modifier = Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Nivel ${state.nivelActual} - ${state.rangoNombre}", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(40.dp))
+
+            Text(
+                text = "Configuración Física",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Black,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Column {
+                Column(modifier = Modifier.padding(8.dp)) {
                     ProfileMenuItem(
-                        icon = Icons.Default.MonitorWeight,
+                        icon = { Icon(Icons.Default.MonitorWeight, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         title = "Actualizar Peso y Medidas",
                         subtitle = "Registra tu progreso actual",
                         onClick = onNavigateToEditProfile
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
                     ProfileMenuItem(
-                        icon = Icons.Default.Settings,
+                        icon = { Icon(Icons.Default.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
                         title = "Ajustar Objetivos",
                         subtitle = "Ganancia, Pérdida o Mantenimiento",
                         onClick = onNavigateToEditProfile
                     )
                 }
             }
-
-            Text("Preferencias de App", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-
-            ElevatedCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp),
-                colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)
-            ) {
-                Column {
-                    ProfileMenuItem(
-                        icon = Icons.Default.Notifications,
-                        title = "Notificaciones",
-                        subtitle = "Recordatorios de rutinas y comidas",
-                        onClick = {
-                            scope.launch { snackbarHost.showSnackbar("🚧 Configuración de notificaciones próximamente") }
-                        }
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f, fill = false))
-
-            OutlinedButton(
-                onClick = onLogout,
-                modifier = Modifier.fillMaxWidth().height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Cerrar Sesión", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
 
 @Composable
-fun ProfileMenuItem(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
+fun ProfileMenuItem(icon: @Composable () -> Unit, title: String, subtitle: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
             .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(imageVector = icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)), contentAlignment = Alignment.Center) {
+                icon()
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column {
+                Text(title, fontWeight = FontWeight.Black, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
-        Spacer(modifier = Modifier.width(16.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Icon(Icons.AutoMirrored.Filled.ArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -230,14 +172,14 @@ fun ProfileMenuItem(icon: ImageVector, title: String, subtitle: String, onClick:
 fun ProfileScreenPreview() {
     MaterialTheme {
         Surface {
-            val snackbarHostState = remember { SnackbarHostState() }
-            CompositionLocalProvider(LocalSnackbarHost provides snackbarHostState) {
-                ProfileBodyScreen(
-                    state = ProfileUiState(),
-                    onNavigateToEditProfile = {},
-                    onLogout = {}
-                )
-            }
+            ProfileBodyScreen(
+                state = ProfileUiState(
+                    userName = "Angel Paredes",
+                    nivelActual = 1,
+                    rangoNombre = "Principiante"
+                ),
+                onNavigateToEditProfile = {}
+            )
         }
     }
 }

@@ -129,7 +129,7 @@ object AppModule {
     @Singleton
     fun provideGeminiApi(moshi: Moshi, client: OkHttpClient): GeminiApi {
         return Retrofit.Builder()
-            .baseUrl("[https://generativelanguage.googleapis.com/](https://generativelanguage.googleapis.com/)")
+            .baseUrl("https://generativelanguage.googleapis.com/")
             .client(client)
             .addConverterFactory(MoshiConverterFactory.create(moshi))
             .build()
