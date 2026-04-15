@@ -31,8 +31,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import edu.ucne.atlaspath.domain.model.Sesion
 import edu.ucne.atlaspath.presentation.tareas.history.HistoryUiState
 import edu.ucne.atlaspath.presentation.tareas.history.HistoryViewModel
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.YearMonth
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
 fun FullCalendarScreen(
@@ -49,7 +54,7 @@ fun FullCalendarBodyScreen(
     state: HistoryUiState,
     onBack: () -> Unit
 ) {
-    var currentMonth by remember { mutableStateOf(Calendar.getInstance()) }
+    var currentMonth by remember { mutableStateOf(YearMonth.now()) }
 
     Scaffold(
         topBar = {
@@ -74,16 +79,8 @@ fun FullCalendarBodyScreen(
                 Column(modifier = Modifier.padding(24.dp)) {
                     CalendarHeader(
                         currentMonth = currentMonth,
-                        onPrevMonth = {
-                            val prev = currentMonth.clone() as Calendar
-                            prev.add(Calendar.MONTH, -1)
-                            currentMonth = prev
-                        },
-                        onNextMonth = {
-                            val next = currentMonth.clone() as Calendar
-                            next.add(Calendar.MONTH, 1)
-                            currentMonth = next
-                        }
+                        onPrevMonth = { currentMonth = currentMonth.minusMonths(1) },
+                        onNextMonth = { currentMonth = currentMonth.plusMonths(1) }
                     )
 
                     Spacer(modifier = Modifier.height(32.dp))
@@ -107,10 +104,13 @@ fun FullCalendarBodyScreen(
 
 @Composable
 fun CalendarHeader(
-    currentMonth: Calendar,
+    currentMonth: YearMonth,
     onPrevMonth: () -> Unit,
     onNextMonth: () -> Unit
 ) {
+    val formatter = DateTimeFormatter.ofPattern("MMMM yyyy", Locale("es", "ES"))
+    val monthName = currentMonth.format(formatter).replaceFirstChar { it.uppercase() }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -122,7 +122,7 @@ fun CalendarHeader(
         ) { Icon(Icons.Default.ChevronLeft, contentDescription = null) }
 
         Text(
-            text = SimpleDateFormat("MMMM yyyy", Locale("es", "ES")).format(currentMonth.time).replaceFirstChar { it.uppercase() },
+            text = monthName,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Black,
             color = MaterialTheme.colorScheme.primary
@@ -146,10 +146,16 @@ fun DaysOfWeekRow() {
 
 @Composable
 fun CalendarGrid(
-    currentMonth: Calendar,
+    currentMonth: YearMonth,
     sesiones: List<Sesion>
 ) {
     val daysInMonth = getDaysForMonth(currentMonth)
+
+    val trainingDates = remember(sesiones) {
+        sesiones.map {
+            Instant.ofEpochMilli(it.fechaInicio).atZone(ZoneId.systemDefault()).toLocalDate()
+        }.toSet()
+    }
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
@@ -157,66 +163,57 @@ fun CalendarGrid(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(daysInMonth) { dayInfo ->
-            CalendarDayCell(
-                dayInfo = dayInfo,
-                currentMonth = currentMonth,
-                sesiones = sesiones
-            )
+            if (dayInfo.dayNumber == 0) {
+                Spacer(modifier = Modifier.aspectRatio(1f))
+            } else {
+                val currentDate = currentMonth.atDay(dayInfo.dayNumber)
+                CalendarDayCell(
+                    date = currentDate,
+                    isTrained = trainingDates.contains(currentDate)
+                )
+            }
         }
     }
 }
 
 @Composable
 fun CalendarDayCell(
-    dayInfo: DayInfo,
-    currentMonth: Calendar,
-    sesiones: List<Sesion>
+    date: LocalDate,
+    isTrained: Boolean
 ) {
-    if (dayInfo.dayNumber == 0) {
-        Spacer(modifier = Modifier.aspectRatio(1f))
-    } else {
-        val entrenoEsteDia = sesiones.any { sesion ->
-            val sCal = Calendar.getInstance().apply { timeInMillis = sesion.fechaInicio }
-            sCal.get(Calendar.YEAR) == currentMonth.get(Calendar.YEAR) &&
-                    sCal.get(Calendar.MONTH) == currentMonth.get(Calendar.MONTH) &&
-                    sCal.get(Calendar.DAY_OF_MONTH) == dayInfo.dayNumber
-        }
+    val isToday = date == LocalDate.now()
 
-        val isToday = Calendar.getInstance().let {
-            it.get(Calendar.YEAR) == currentMonth.get(Calendar.YEAR) &&
-                    it.get(Calendar.MONTH) == currentMonth.get(Calendar.MONTH) &&
-                    it.get(Calendar.DAY_OF_MONTH) == dayInfo.dayNumber
-        }
+    val bgColor = when {
+        isTrained -> MaterialTheme.colorScheme.primary
+        isToday -> MaterialTheme.colorScheme.surfaceVariant
+        else -> Color.Transparent
+    }
 
-        Box(
-            modifier = Modifier
-                .aspectRatio(1f)
-                .clip(CircleShape)
-                .background(
-                    when {
-                        entrenoEsteDia -> MaterialTheme.colorScheme.primary
-                        isToday -> MaterialTheme.colorScheme.surfaceVariant
-                        else -> Color.Transparent
-                    }
-                )
-                .border(
-                    width = if (isToday && !entrenoEsteDia) 2.dp else 0.dp,
-                    color = if (isToday && !entrenoEsteDia) MaterialTheme.colorScheme.primary else Color.Transparent,
-                    shape = CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = dayInfo.dayNumber.toString(),
-                fontWeight = if (entrenoEsteDia || isToday) FontWeight.Black else FontWeight.Medium,
-                fontSize = 16.sp,
-                color = when {
-                    entrenoEsteDia -> MaterialTheme.colorScheme.onPrimary
-                    isToday -> MaterialTheme.colorScheme.primary
-                    else -> MaterialTheme.colorScheme.onSurface
-                }
-            )
-        }
+    val borderColor = if (isToday && !isTrained) MaterialTheme.colorScheme.primary else Color.Transparent
+    val borderWidth = if (isToday && !isTrained) 2.dp else 0.dp
+
+    val textColor = when {
+        isTrained -> MaterialTheme.colorScheme.onPrimary
+        isToday -> MaterialTheme.colorScheme.primary
+        else -> MaterialTheme.colorScheme.onSurface
+    }
+
+    val textWeight = if (isTrained || isToday) FontWeight.Black else FontWeight.Medium
+
+    Box(
+        modifier = Modifier
+            .aspectRatio(1f)
+            .clip(CircleShape)
+            .background(bgColor)
+            .border(borderWidth, borderColor, CircleShape),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = date.dayOfMonth.toString(),
+            fontWeight = textWeight,
+            fontSize = 16.sp,
+            color = textColor
+        )
     }
 }
 
@@ -254,17 +251,13 @@ fun ConsistencyLegendCard() {
 
 data class DayInfo(val dayNumber: Int)
 
-fun getDaysForMonth(calendar: Calendar): List<DayInfo> {
-    val tempCal = calendar.clone() as Calendar
-    tempCal.set(Calendar.DAY_OF_MONTH, 1)
-
-    var firstDayOfWeek = tempCal.get(Calendar.DAY_OF_WEEK) - 2
-    if (firstDayOfWeek < 0) firstDayOfWeek = 6
-
-    val maxDays = tempCal.getActualMaximum(Calendar.DAY_OF_MONTH)
+fun getDaysForMonth(yearMonth: YearMonth): List<DayInfo> {
+    val firstDayOfWeek = yearMonth.atDay(1).dayOfWeek.value // 1=Mon, 7=Sun
+    val emptyDaysCount = firstDayOfWeek - 1
+    val maxDays = yearMonth.lengthOfMonth()
 
     val daysList = mutableListOf<DayInfo>()
-    for (i in 0 until firstDayOfWeek) daysList.add(DayInfo(0))
+    for (i in 0 until emptyDaysCount) daysList.add(DayInfo(0))
     for (i in 1..maxDays) daysList.add(DayInfo(i))
 
     return daysList
@@ -275,8 +268,8 @@ fun getDaysForMonth(calendar: Calendar): List<DayInfo> {
 fun FullCalendarPreview() {
     MaterialTheme {
         Surface {
-            val today = Calendar.getInstance().timeInMillis
-            val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_MONTH, -1) }.timeInMillis
+            val today = Instant.now().toEpochMilli()
+            val yesterday = Instant.now().minusSeconds(86400).toEpochMilli()
 
             val mockSesiones = listOf(
                 Sesion(fechaInicio = today, rutinaId = 1, fechaFin = today + 3600),
