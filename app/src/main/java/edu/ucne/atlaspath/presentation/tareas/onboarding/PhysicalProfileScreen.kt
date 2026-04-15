@@ -89,6 +89,7 @@ fun PhysicalProfileBodyScreen(
         )
     }
 }
+
 @Composable
 private fun ProfileBottomBar(
     showValidationError: Boolean,
@@ -140,59 +141,81 @@ private fun ProfileFormContent(
         Spacer(modifier = Modifier.height(4.dp))
         Text(text = "Ayuda a Atlas a conocerte", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Black, color = MaterialTheme.colorScheme.primary)
 
-        ProfileDropdown("Género Biológico", state.selectedGender, listOf("Hombre", "Mujer", "Otro")) { onEvent(PhysicalProfileEvent.OnGenderChange(it)) }
-
-        OutlinedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                ProfileSlider("Edad", "${state.age.roundToInt()} años", state.age, 14f..90f) { onEvent(PhysicalProfileEvent.OnAgeChange(it)) }
-            }
-        }
-
-        OutlinedCard(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
-            colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
-                ProfileUnitSlider("Peso Corporal", if (state.isKg) "kg" else "lbs", state.weightValue, if (state.isKg) 40f..160f else 90f..350f, { onEvent(PhysicalProfileEvent.OnWeightChange(it)) }) {
-                    onEvent(PhysicalProfileEvent.ToggleWeightUnit)
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
-                Spacer(modifier = Modifier.height(16.dp))
-                ProfileUnitSlider("Estatura", if (state.isCm) "cm" else "ft", state.heightValue, if (state.isCm) 140f..210f else 4.5f..7f, { onEvent(PhysicalProfileEvent.OnHeightChange(it)) }) {
-                    onEvent(PhysicalProfileEvent.ToggleHeightUnit)
-                }
-            }
-        }
-
-        ProfileDropdown("Experiencia", state.selectedLevel, listOf("Principiante", "Intermedio", "Avanzado")) { onEvent(PhysicalProfileEvent.OnLevelChange(it)) }
-
-        Column {
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Tipo de Cuerpo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-                IconButton(
-                    onClick = { onEvent(PhysicalProfileEvent.ToggleHelp(true)) },
-                    modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
-                ) { Icon(Icons.Default.Info, contentDescription = "Info", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary) }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            ProfileDropdown("", state.selectedSomatotype, listOf("Ectomorfo", "Mesomorfo", "Endomorfo")) { onEvent(PhysicalProfileEvent.OnSomatotypeChange(it)) }
-        }
-
-        Column {
-            Text("Objetivo principal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(8.dp))
-            ProfileDropdown("", state.selectedGoal, listOf("Pérdida de Grasa", "Ganancia Muscular", "Recomposición", "Mantenimiento")) { onEvent(PhysicalProfileEvent.OnGoalChange(it)) }
-        }
+        IdentitySection(state, onEvent)
+        BiometrySection(state, onEvent)
+        GoalsSection(state, onEvent)
 
         Spacer(modifier = Modifier.height(40.dp))
+    }
+}
+
+@Composable
+private fun IdentitySection(
+    state: PhysicalProfileUiState,
+    onEvent: (PhysicalProfileEvent) -> Unit
+) {
+    ProfileDropdown("Género Biológico", state.selectedGender, listOf("Hombre", "Mujer", "Otro")) { onEvent(PhysicalProfileEvent.OnGenderChange(it)) }
+
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            ProfileSlider("Edad", "${state.age.roundToInt()} años", state.age, 14f..90f) { onEvent(PhysicalProfileEvent.OnAgeChange(it)) }
+        }
+    }
+}
+
+@Composable
+private fun BiometrySection(
+    state: PhysicalProfileUiState,
+    onEvent: (PhysicalProfileEvent) -> Unit
+) {
+    OutlinedCard(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            ProfileUnitSlider("Peso Corporal", if (state.isKg) "kg" else "lbs", state.weightValue, if (state.isKg) 40f..160f else 90f..350f, { onEvent(PhysicalProfileEvent.OnWeightChange(it)) }) {
+                onEvent(PhysicalProfileEvent.ToggleWeightUnit)
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+            Spacer(modifier = Modifier.height(16.dp))
+            ProfileUnitSlider("Estatura", if (state.isCm) "cm" else "ft", state.heightValue, if (state.isCm) 140f..210f else 4.5f..7f, { onEvent(PhysicalProfileEvent.OnHeightChange(it)) }) {
+                onEvent(PhysicalProfileEvent.ToggleHeightUnit)
+            }
+        }
+    }
+}
+
+@Composable
+private fun GoalsSection(
+    state: PhysicalProfileUiState,
+    onEvent: (PhysicalProfileEvent) -> Unit
+) {
+    ProfileDropdown("Experiencia", state.selectedLevel, listOf("Principiante", "Intermedio", "Avanzado")) { onEvent(PhysicalProfileEvent.OnLevelChange(it)) }
+
+    Column {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Tipo de Cuerpo", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+            IconButton(
+                onClick = { onEvent(PhysicalProfileEvent.ToggleHelp(true)) },
+                modifier = Modifier.size(36.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)
+            ) { Icon(Icons.Default.Info, contentDescription = "Info", modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.primary) }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        ProfileDropdown("", state.selectedSomatotype, listOf("Ectomorfo", "Mesomorfo", "Endomorfo")) { onEvent(PhysicalProfileEvent.OnSomatotypeChange(it)) }
+    }
+
+    Column {
+        Text("Objetivo principal", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+        Spacer(modifier = Modifier.height(8.dp))
+        ProfileDropdown("", state.selectedGoal, listOf("Pérdida de Grasa", "Ganancia Muscular", "Recomposición", "Mantenimiento")) { onEvent(PhysicalProfileEvent.OnGoalChange(it)) }
     }
 }
 

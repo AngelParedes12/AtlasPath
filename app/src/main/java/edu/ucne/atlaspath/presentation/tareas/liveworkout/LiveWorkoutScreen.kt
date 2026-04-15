@@ -313,34 +313,21 @@ fun WorkoutSetRow(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text("${set.setId}", modifier = Modifier.weight(1f), textAlign = TextAlign.Center, fontWeight = FontWeight.Bold)
-        OutlinedTextField(
+
+        WorkoutSetTextField(
             value = set.weightLbs,
             onValueChange = { onEvent(LiveWorkoutEvent.UpdateSetValues(exIndex, setIndex, it, set.reps)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            enabled = !isCompleted,
-            modifier = Modifier.weight(2f).height(50.dp).padding(horizontal = 4.dp),
-            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                disabledBorderColor = Color.Transparent,
-                disabledTextColor = MaterialTheme.colorScheme.onSurface
-            )
+            isEnabled = !isCompleted,
+            modifier = Modifier.weight(2f)
         )
-        OutlinedTextField(
+
+        WorkoutSetTextField(
             value = set.reps,
             onValueChange = { onEvent(LiveWorkoutEvent.UpdateSetValues(exIndex, setIndex, set.weightLbs, it)) },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            enabled = !isCompleted,
-            modifier = Modifier.weight(2f).height(50.dp).padding(horizontal = 4.dp),
-            textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-            colors = OutlinedTextFieldDefaults.colors(
-                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
-                disabledBorderColor = Color.Transparent,
-                disabledTextColor = MaterialTheme.colorScheme.onSurface
-            )
+            isEnabled = !isCompleted,
+            modifier = Modifier.weight(2f)
         )
+
         IconButton(
             onClick = { onEvent(LiveWorkoutEvent.ToggleSetComplete(exIndex, setIndex)) },
             enabled = isValidReps || isCompleted,
@@ -353,6 +340,29 @@ fun WorkoutSetRow(
             )
         }
     }
+}
+
+@Composable
+private fun WorkoutSetTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    isEnabled: Boolean,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        enabled = isEnabled,
+        modifier = modifier.height(50.dp).padding(horizontal = 4.dp),
+        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+        colors = OutlinedTextFieldDefaults.colors(
+            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+            disabledBorderColor = Color.Transparent,
+            disabledTextColor = MaterialTheme.colorScheme.onSurface
+        )
+    )
 }
 
 fun formatTime(seconds: Long): String {

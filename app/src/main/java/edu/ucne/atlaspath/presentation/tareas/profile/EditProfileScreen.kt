@@ -90,6 +90,7 @@ fun EditProfileBodyScreen(
         )
     }
 }
+
 @Composable
 private fun EditProfileFormContent(
     state: EditProfileUiState,
@@ -280,7 +281,6 @@ fun BiometrySliderRow(
         )
     }
 }
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun SelectionFlowRow(
@@ -301,27 +301,44 @@ fun SelectionFlowRow(
         ) {
             options.forEach { optStr ->
                 val isSelected = selectedOption == optStr
-                val containerColor by animateColorAsState(if (isSelected) activeColor else MaterialTheme.colorScheme.surfaceVariant, label = "color")
-                val contentColor by animateColorAsState(if (isSelected) onActiveColor else MaterialTheme.colorScheme.onSurfaceVariant, label = "contentColor")
-                val elevation by animateDpAsState(if (isSelected) 4.dp else 0.dp, label = "elevation")
-
-                Surface(
-                    modifier = Modifier.clickable { onSelect(optStr) },
-                    shape = RoundedCornerShape(12.dp),
-                    color = containerColor,
-                    shadowElevation = elevation,
-                    border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant)
-                ) {
-                    Text(
-                        text = optStr,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = contentColor
-                    )
-                }
+                SelectionOptionChip(
+                    text = optStr,
+                    isSelected = isSelected,
+                    activeColor = activeColor,
+                    onActiveColor = onActiveColor,
+                    onClick = { onSelect(optStr) }
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun SelectionOptionChip(
+    text: String,
+    isSelected: Boolean,
+    activeColor: Color,
+    onActiveColor: Color,
+    onClick: () -> Unit
+) {
+    val containerColor by animateColorAsState(if (isSelected) activeColor else MaterialTheme.colorScheme.surfaceVariant, label = "color")
+    val contentColor by animateColorAsState(if (isSelected) onActiveColor else MaterialTheme.colorScheme.onSurfaceVariant, label = "contentColor")
+    val elevation by animateDpAsState(if (isSelected) 4.dp else 0.dp, label = "elevation")
+
+    Surface(
+        modifier = Modifier.clickable { onClick() },
+        shape = RoundedCornerShape(12.dp),
+        color = containerColor,
+        shadowElevation = elevation,
+        border = BorderStroke(1.dp, if (isSelected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant)
+    ) {
+        Text(
+            text = text,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = contentColor
+        )
     }
 }
 
