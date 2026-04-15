@@ -51,12 +51,7 @@ fun LiveWorkoutScreen(
 
     LaunchedEffect(state.entrenamientoFinalizado) {
         if (state.entrenamientoFinalizado) {
-            val setsCompletados = state.activeExercises.flatMap { it.sets }.count { it.isCompleted }
-            if (setsCompletados > 0) {
-                snackbarHost.showSnackbar("⚔️ ¡Entrenamiento finalizado! Ganaste experiencia.")
-            } else {
-                snackbarHost.showSnackbar("⚠️ Entrenamiento descartado (sin actividad).")
-            }
+            handleWorkoutFinish(state.activeExercises, snackbarHost)
             onFinish()
         }
     }
@@ -66,6 +61,15 @@ fun LiveWorkoutScreen(
         onEvent = viewModel::onEvent,
         onCancel = onCancel
     )
+}
+
+private suspend fun handleWorkoutFinish(exercises: List<ActiveExercise>, snackbarHost: SnackbarHostState) {
+    val hasCompletedSets = exercises.any { ex -> ex.sets.any { it.isCompleted } }
+    if (hasCompletedSets) {
+        snackbarHost.showSnackbar("⚔️ ¡Entrenamiento finalizado! Ganaste experiencia.")
+    } else {
+        snackbarHost.showSnackbar("⚠️ Entrenamiento descartado (sin actividad).")
+    }
 }
 
 @Composable
@@ -88,33 +92,45 @@ fun LiveWorkoutBodyScreen(
                 CircularProgressIndicator()
             }
         } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    Text(
-                        text = state.rutinaTitulo.ifBlank { "Entrenamiento Libre" }.uppercase(),
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Black,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                itemsIndexed(state.activeExercises) { exIndex, activeExercise ->
-                    ActiveExerciseCard(
-                        activeExercise = activeExercise,
-                        exIndex = exIndex,
-                        onEvent = onEvent
-                    )
-                }
-
-                item { Spacer(modifier = Modifier.height(40.dp)) }
-            }
+            ActiveExercisesList(
+                state = state,
+                onEvent = onEvent,
+                modifier = Modifier.padding(padding)
+            )
         }
+    }
+}
+
+@Composable
+private fun ActiveExercisesList(
+    state: LiveWorkoutUiState,
+    onEvent: (LiveWorkoutEvent) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            Text(
+                text = state.rutinaTitulo.ifBlank { "Entrenamiento Libre" }.uppercase(),
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Black,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+
+        itemsIndexed(state.activeExercises) { exIndex, activeExercise ->
+            ActiveExerciseCard(
+                activeExercise = activeExercise,
+                exIndex = exIndex,
+                onEvent = onEvent
+            )
+        }
+
+        item { Spacer(modifier = Modifier.height(40.dp)) }
     }
 }
 
@@ -292,6 +308,7 @@ private fun ExerciseExpandedContent(
         }
     }
 }
+
 @Composable
 fun WorkoutSetRow(
     set: ActiveSet,
@@ -301,7 +318,7 @@ fun WorkoutSetRow(
 ) {
     val isCompleted = set.isCompleted
     val rowColor = if (isCompleted) MaterialTheme.colorScheme.primaryContainer else Color.Transparent
-    val isValidReps = set.reps.isNotBlank() && (set.reps.toIntOrNull() ?: 0) > 0
+    val isValidReps = isRepValid(set.reps)
 
     Row(
         modifier = Modifier
@@ -328,17 +345,38 @@ fun WorkoutSetRow(
             modifier = Modifier.weight(2f)
         )
 
-        IconButton(
-            onClick = { onEvent(LiveWorkoutEvent.ToggleSetComplete(exIndex, setIndex)) },
-            enabled = isValidReps || isCompleted,
-            modifier = Modifier.weight(1f)
-        ) {
-            Icon(
-                imageVector = Icons.Default.Check,
-                contentDescription = "Completar",
-                tint = if (isCompleted) MaterialTheme.colorScheme.primary else if (isValidReps) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.surfaceVariant
-            )
-        }
+        SetCompletionButton(
+            isCompleted = isCompleted,
+            isValidReps = isValidReps,
+            modifier = Modifier.weight(1f),
+            onClick = { onEvent(LiveWorkoutEvent.ToggleSetComplete(exIndex, setIndex)) }
+        )
+    }
+}
+
+private fun isRepValid(reps: String): Boolean {
+    return reps.toIntOrNull()?.let { it > 0 } ?: false
+}
+
+@Composable
+private fun SetCompletionButton(
+    isCompleted: Boolean,
+    isValidReps: Boolean,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val tintColor = when {
+        isCompleted -> MaterialTheme.colorScheme.primary
+        isValidReps -> MaterialTheme.colorScheme.onSurfaceVariant
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+
+    IconButton(
+        onClick = onClick,
+        enabled = isValidReps || isCompleted,
+        modifier = modifier
+    ) {
+        Icon(Icons.Default.Check, contentDescription = "Completar", tint = tintColor)
     }
 }
 
