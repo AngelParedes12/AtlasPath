@@ -142,3 +142,11 @@ Presiona el botón de ▶️ **Run** y prepárate para sudar.
 -----
 
 > *"El hierro no miente. El código tampoco. Forja ambos."* 🛡️
+
+
+<img width="1080" height="2400" alt="Screenshot_20260415_192154_AtlasPath" src="https://github.com/user-attachments/assets/eecb4039-c15a-4893-b395-612b8651d542" />
+<img width="1080" height="2400" alt="Screenshot_20260415_192148_AtlasPath" src="https://github.com/user-attachments/assets/b53405ba-2f11-4ed0-a739-cb84c2f34072" />
+<img width="1080" height="2400" alt="Screenshot_20260415_192150_AtlasPath" src="https://github.com/user-attachments/assets/2b790d70-0c95-4588-83ce-f4df0601a177" />
+<img width="1080" height="2400" alt="Screenshot_20260415_192046_AtlasPath" src="https://github.com/user-attachments/assets/17ed811e-0e17-4a5e-8a35-0826d29437fd" />
+<img width="1080" height="2400" alt="Screenshot_20260415_192145_AtlasPath" src="https://github.com/user-attachments/assets/aa70b932-6a3f-479c-a960-861362f22f9a" />
+<img width="1080" height="2400" alt="Screenshot_20260415_192028_AtlasPath" src="https://github.com/user-attachments/assets/ae541d70-9221-4450-8f22-f48d2297b55b" />
